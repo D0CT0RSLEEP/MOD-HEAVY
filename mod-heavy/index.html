@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="MOD-HEAVY — CyberLabs defensive training floor. Mission Zero: Static on the Line. Blue-team only." />
+  <meta name="theme-color" content="#0b1018" />
+  <title>MOD-HEAVY · Mission Zero</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="scanline" aria-hidden="true"></div>
+  <div class="grid-bg" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">▣</span>
+      <div>
+        <div class="brand-title">MOD-HEAVY</div>
+        <div class="brand-sub">CyberLabs Training Division</div>
+      </div>
+    </div>
+    <div class="topbar-meta">
+      <span class="pill pill-sim">SIMULATED</span>
+      <span class="pill pill-def">DEFEND ONLY</span>
+      <span class="clock" id="ops-clock" aria-live="polite"></span>
+    </div>
+  </header>
+
+  <main class="shell">
+    <!-- HUB -->
+    <section id="view-hub" class="view active" data-view="hub">
+      <div class="hero panel">
+        <p class="eyebrow">Operations Floor · Hub</p>
+        <h1>Defensive drills for teams who can’t afford to guess.</h1>
+        <p class="lede">
+          MOD-HEAVY is CyberLabs’ training floor: investigate alerts, contain risk, and document what you did —
+          without ever breaking into a system. All incidents are fiction.
+        </p>
+        <ul class="feature-row">
+          <li><strong>Detect</strong> triage signals</li>
+          <li><strong>Decide</strong> severity &amp; action</li>
+          <li><strong>Contain</strong> safely</li>
+          <li><strong>Document</strong> after-action</li>
+        </ul>
+        <div class="cta-row">
+          <button type="button" class="btn btn-primary" data-nav="briefing">Start Mission Zero</button>
+          <button type="button" class="btn btn-ghost" data-nav="about">What is this?</button>
+        </div>
+      </div>
+
+      <div class="card-grid">
+        <article class="card panel">
+          <h2>Mission Zero</h2>
+          <p class="card-code">M0 · Static on the Line</p>
+          <p>Orientation + first alert triage for simulated client <em>Northglass Logistics</em>.</p>
+          <button type="button" class="btn btn-secondary btn-sm" data-nav="briefing">Enter briefing</button>
+        </article>
+        <article class="card panel muted-card">
+          <h2>Later modules</h2>
+          <p class="card-code">M1–M4 · Locked</p>
+          <p>Phishing, endpoint narrative, egress review, after-action reporting — shipping as the floor expands.</p>
+        </article>
+        <article class="card panel">
+          <h2>Rules of engagement</h2>
+          <p>Blue team only. No exploitation, no pwn, no attack playbooks. Curiosity stops at containment.</p>
+          <button type="button" class="btn btn-ghost btn-sm" data-nav="briefing">Read ROE</button>
+        </article>
+      </div>
+    </section>
+
+    <!-- ABOUT (inline panel from hub) -->
+    <section id="view-about" class="view" data-view="about">
+      <div class="panel">
+        <p class="eyebrow">About</p>
+        <h1>What MOD-HEAVY is</h1>
+        <p>
+          A productized defensive lab experience under CyberLabs. You play a shift analyst: something odd hits a
+          simulated network, and your job is to understand it and stop the bleeding — not to break in.
+        </p>
+        <p class="dim">
+          Related aesthetic language to other CyberLabs lore projects, but this floor is professional ops-console —
+          not arcade CRT. Evidence is fabricated (fake company, documentation-range IPs, hashes labeled SIMULATION).
+        </p>
+        <div class="cta-row">
+          <button type="button" class="btn btn-primary" data-nav="briefing">Start Mission Zero</button>
+          <button type="button" class="btn btn-ghost" data-nav="hub">Back to hub</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- BRIEFING -->
+    <section id="view-briefing" class="view" data-view="briefing">
+      <div class="panel">
+        <p class="eyebrow">Briefing Terminal</p>
+        <h1 id="brief-title">Mission Zero</h1>
+        <p class="card-code" id="brief-code">M0 · Static on the Line</p>
+        <div class="callout callout-warn">
+          <strong>ROE — Defend only.</strong>
+          <span>Simulated data. Investigate, contain, escalate, document. Never exploit or attack.</span>
+        </div>
+        <div id="brief-body" class="prose"></div>
+        <div class="cta-row">
+          <button type="button" class="btn btn-primary" data-nav="triage" id="btn-accept-brief">
+            Accept shift · open alert
+          </button>
+          <button type="button" class="btn btn-ghost" data-nav="hub">Return to hub</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRIAGE -->
+    <section id="view-triage" class="view" data-view="triage">
+      <div class="triage-layout">
+        <aside class="panel alert-panel">
+          <p class="eyebrow">Inbound Alert</p>
+          <h2 id="alert-id">—</h2>
+          <dl class="meta-list" id="alert-meta"></dl>
+          <p id="alert-summary" class="alert-summary"></p>
+          <h3 class="subhead">Indicators (SIM)</h3>
+          <ul class="ind-list" id="alert-indicators"></ul>
+          <h3 class="subhead">Context / noise</h3>
+          <ul class="noise-list" id="alert-noise"></ul>
+        </aside>
+
+        <div class="triage-steps">
+          <div class="panel step" id="step-severity">
+            <p class="eyebrow">Step 1 · Severity</p>
+            <h2 id="sev-prompt">Classify severity</h2>
+            <div class="option-grid" id="sev-options" role="group" aria-label="Severity options"></div>
+            <p class="feedback" id="sev-feedback" hidden></p>
+          </div>
+
+          <div class="panel step step-locked" id="step-action">
+            <p class="eyebrow">Step 2 · First action</p>
+            <h2 id="act-prompt">Choose first action</h2>
+            <div class="option-grid" id="act-options" role="group" aria-label="Action options"></div>
+            <p class="feedback" id="act-feedback" hidden></p>
+            <div class="cta-row" id="act-continue" hidden>
+              <button type="button" class="btn btn-primary" data-nav="after">Continue to after-action</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AFTER ACTION -->
+    <section id="view-after" class="view" data-view="after">
+      <div class="panel">
+        <p class="eyebrow">After-Action Desk</p>
+        <h1>Shift notes</h1>
+        <div class="score-banner" id="score-banner">
+          <div class="score-num" id="score-num">0</div>
+          <div>
+            <div class="score-label" id="score-label">—</div>
+            <p class="score-note" id="score-note"></p>
+          </div>
+        </div>
+
+        <label class="field-label" for="analyst-notes">Analyst notes (local only — not uploaded)</label>
+        <textarea id="analyst-notes" class="notes" rows="5" maxlength="1200" placeholder="What did you see? What would you tell Sam? (saved in this browser only)"></textarea>
+        <p class="dim tiny" id="notes-hint">Optional. Notes stay in localStorage on this device.</p>
+
+        <div class="lore-panel" id="lore-panel" hidden>
+          <p class="eyebrow">Unlocked · Lore crumb</p>
+          <h2 id="lore-title"></h2>
+          <pre class="lore-body" id="lore-body"></pre>
+        </div>
+
+        <div class="cta-row">
+          <button type="button" class="btn btn-secondary" id="btn-save-notes">Save notes</button>
+          <button type="button" class="btn btn-ghost" id="btn-replay">Replay Mission Zero</button>
+          <button type="button" class="btn btn-ghost" data-nav="hub">Ops floor hub</button>
+        </div>
+        <p class="toast" id="toast" hidden role="status"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>CyberLabs · MOD-HEAVY · Blue-team training</span>
+    <span class="dim">Northglass Logistics is fictional. No offensive content.</span>
+  </footer>
+
+  <script src="js/main.js" defer></script>
+</body>
+</html>

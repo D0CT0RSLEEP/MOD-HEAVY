@@ -1,0 +1,115 @@
+{
+  "id": "M0",
+  "codename": "Static on the Line",
+  "title": "Mission Zero — Orientation & First Alert",
+  "company": "Northglass Logistics (SIMULATED)",
+  "disclaimer": "All hosts, IPs, hashes, and personnel are fabricated for defensive training. No real systems are involved.",
+  "shiftLead": "Sam",
+  "briefing": {
+    "context": "You are a CyberLabs analyst on shift for the MOD-HEAVY training floor. Northglass Logistics is a simulated client network used only for defensive drills.",
+    "roe": [
+      "Defend only — investigate, contain, escalate, document.",
+      "Never attempt to exploit, reverse-engineer for flags, or attack any system.",
+      "Treat all evidence as simulated fiction.",
+      "When unsure, isolate and escalate rather than dig deeper into risky curiosity."
+    ],
+    "objective": "Classify the inbound alert severity and choose a safe first action. Score is based on judgment, not speed-runs."
+  },
+  "alert": {
+    "id": "NGL-SOC-8841",
+    "received": "2026-09-16T21:04:12Z",
+    "source": "EDR — endpoint sensor (SIM)",
+    "host": "NG-WRKSTN-042 (warehouse floor PC)",
+    "user": "j.mendez (warehouse clerk — SIM)",
+    "summary": "Unusual outbound connection pattern after a scheduled software update window. Sensor flagged repeated short bursts to an unfamiliar external IP in documentation range 203.0.113.0/24 (TEST-NET-3).",
+    "indicators": [
+      { "label": "Dest IP", "value": "203.0.113.77 (SIMULATION — documentation range)" },
+      { "label": "Port", "value": "443/tcp (encrypted — content not inspected)" },
+      { "label": "Process", "value": "updater_helper.exe — parent: scheduled task (SIM)" },
+      { "label": "Hash", "value": "SIMULATION:a1b2c3d4e5f67890… (not a real sample)" },
+      { "label": "Volume", "value": "~2.4 MB over 6 minutes — small bursts" }
+    ],
+    "noise": [
+      "Nightly inventory sync ran on schedule 20 minutes earlier (expected).",
+      "Same host had a false-positive adware alert last month (closed, benign)."
+    ]
+  },
+  "severity": {
+    "prompt": "How would you classify this alert for Northglass Logistics?",
+    "options": [
+      {
+        "id": "info",
+        "label": "Informational",
+        "points": 0,
+        "feedback": "Too soft. Repeated unknown egress after an update window deserves more than a shrug — even if it turns out benign."
+      },
+      {
+        "id": "low",
+        "label": "Low",
+        "points": 1,
+        "feedback": "Defensible as a first pass, but the unknown destination and burst pattern suggest you should treat it as at least medium until cleared."
+      },
+      {
+        "id": "medium",
+        "label": "Medium",
+        "points": 3,
+        "feedback": "Solid call. Unknown egress + post-update timing warrants active triage without panicking the floor.",
+        "best": true
+      },
+      {
+        "id": "critical",
+        "label": "Critical",
+        "points": 1,
+        "feedback": "Possible over-escalation. Volume is small and there's no confirmed data loss yet — medium keeps urgency without burning the pager for every anomalous blip."
+      }
+    ]
+  },
+  "actions": {
+    "prompt": "What is your first action?",
+    "options": [
+      {
+        "id": "investigate",
+        "label": "Investigate logs",
+        "detail": "Pull EDR timeline, DNS, and proxy summaries for NG-WRKSTN-042 (read-only).",
+        "points": 3,
+        "feedback": "Good first move. Understanding scope before you touch the host keeps you from flying blind — and stays defensive.",
+        "best": true
+      },
+      {
+        "id": "isolate",
+        "label": "Isolate host",
+        "detail": "Network-quarantine NG-WRKSTN-042 via EDR containment policy.",
+        "points": 2,
+        "feedback": "Safe containment. Isolation stops further egress; follow up with log review so you know what you locked down."
+      },
+      {
+        "id": "escalate",
+        "label": "Escalate to shift lead",
+        "detail": "Hand off to Sam with alert ID NGL-SOC-8841 and your severity call.",
+        "points": 2,
+        "feedback": "Reasonable when you're unsure. Escalation is a strength — just capture what you've already observed so Sam isn't starting cold."
+      },
+      {
+        "id": "ignore",
+        "label": "Ignore / close as noise",
+        "detail": "Mark false positive based on last month's adware ticket.",
+        "points": 0,
+        "feedback": "Unsafe. Prior false positives don't clear a new unknown egress pattern. Closing early is how small problems become incidents."
+      }
+    ]
+  },
+  "afterAction": {
+    "maxScore": 6,
+    "passScore": 4,
+    "loreUnlock": {
+      "id": "crumb-m0",
+      "title": "Ops Floor Memo — Fragment",
+      "body": "FROM: Training Division archive\nSUBJECT: Why we call it MOD-HEAVY\n\n\"Heavy\" isn't about firepower. It's about the weight of the decision when the floor is quiet and the alert isn't. Contain first. Curiosity later — and never past the ROE.\n\n— Sam\n(SIMULATED training lore)"
+    },
+    "scoreBands": [
+      { "min": 5, "label": "Sharp judgment", "note": "You balanced urgency with process. Ready for deeper modules when they ship." },
+      { "min": 3, "label": "Solid trainee", "note": "Core instincts are sound. Re-read the ROE and evidence noise next time." },
+      { "min": 0, "label": "Needs a second pass", "note": "Re-run Mission Zero with the briefing open. Prefer investigate / isolate / escalate over closing early." }
+    ]
+  }
+}
