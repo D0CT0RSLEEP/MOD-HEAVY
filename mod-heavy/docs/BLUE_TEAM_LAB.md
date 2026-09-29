@@ -16,13 +16,13 @@ You are a CyberLabs analyst on shift. Something weird hit the network. Your job 
 - Report desk (submit findings; scored on accuracy and clarity)
 
 ### Mission modules (grow over time)
-| ID | Name | Skill focus | Player does |
-|----|------|-------------|-------------|
-| M0 | Static on the Line | Orientation | Read brief, classify alert severity, pick first action |
-| M1 | Phish in the Wire | Email / identity | Spot phishing indicators, recommend containment |
-| M2 | Ghost Process | Endpoint / EDR narrative | Triage process tree from a story log, isolate host |
-| M3 | Exfil Whisper | Network / detection | Spot odd egress in flow summaries, propose block |
-| M4 | After Action | Reporting | Write a short incident summary CyberLabs-style |
+| ID | Name | Skill focus | Player does | Status |
+|----|------|-------------|-------------|--------|
+| M0 | Static on the Line | Orientation | Read brief, classify alert severity, pick first action | Shipped |
+| M1 | Phish in the Wire | Email / identity | Inspect a phishing email (headers, auth results, links, attachment), classify + scope from proxy/sign-in logs, pick proportional containment, write an incident report | Shipped — see `MISSION_ONE.md` |
+| M2 | Ghost Process | Endpoint / EDR narrative | Triage process tree from a story log, isolate host | Teased at end of M1 |
+| M3 | Exfil Whisper | Network / detection | Spot odd egress in flow summaries, propose block | Planned |
+| M4 | After Action | Reporting | Write a short incident summary CyberLabs-style | Planned |
 
 Each module: **Detect → Decide → Contain → Document**. No “get shell / crack hash / exploit CVE” steps.
 
@@ -39,7 +39,7 @@ Unlock cosmetics / dossier pages / ARG lore crumbs — not exploit kits.
 - **Lead** — ambiguous evidence, must justify tradeoffs
 
 ## Evidence style
-All data is **fabricated** and clearly fictional (fake company “Northglass Logistics,” fake IPs in documentation ranges, fake hashes labeled `SIMULATION`). Never copy real victim data.
+All data is **fabricated** and clearly fictional (fake company “Northglass Logistics,” fake IPs in documentation ranges, fake hashes labeled `SIMULATION`, domains on the reserved `.example` TLD). Never copy real victim data, real brands, or real phishing domains.
 
 ## Tech shape (when we build)
 - Static or light web app in `MOD-HEAVY` repo (like Polybius)

@@ -1,6 +1,10 @@
 /**
- * MOD-HEAVY Mission Zero — client-side mission state & scoring.
+ * MOD-HEAVY Mission Zero — client-side mission state & scoring, plus hub navigation.
  * Defensive / blue-team training only. No offensive tooling.
+ *
+ * Later missions live in their own scripts (e.g. js/m1.js) and own views whose
+ * data-view starts with "m<N>-". This file only shows those views on data-nav
+ * clicks; the mission script handles everything inside them.
  */
 (function () {
   "use strict";
@@ -31,6 +35,17 @@
     } catch (_) {
       /* ignore */
     }
+  }
+
+  /** Views owned by a mission module script (m1-briefing, m1-detect, …). */
+  function isModuleView(name) {
+    return /^m\d+-[a-z-]+$/.test(name || "") && !!document.querySelector('.view[data-view="' + name + '"]');
+  }
+
+  /** Deep links into a module land on that module's briefing (its progress is in memory only). */
+  function moduleEntry(name) {
+    const entry = name.split("-")[0] + "-briefing";
+    return document.querySelector('.view[data-view="' + entry + '"]') ? entry : "hub";
   }
 
   function tickClock() {
@@ -283,25 +298,41 @@
     showView("briefing");
   }
 
+  function navigateTo(target) {
+    if (!target) return;
+    if (target === "triage") {
+      if (!mission) return;
+      renderAlert();
+      if (!state.severityId) renderTriagePrompts();
+    }
+    if (target === "after") {
+      if (!state.actionId) return;
+      renderAfterAction();
+    }
+    showView(target);
+  }
+
   function bindNav() {
     document.body.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-nav]");
+      const el = e.target && e.target.nodeType === 3 ? e.target.parentElement : e.target;
+      if (!el || !el.closest) return;
+      const btn = el.closest("[data-nav]");
       if (!btn) return;
-      const target = btn.getAttribute("data-nav");
-      if (target === "triage") {
-        if (!mission) return;
-        renderAlert();
-        if (!state.severityId) renderTriagePrompts();
-      }
-      if (target === "after") {
-        if (!state.actionId) return;
-        renderAfterAction();
-      }
-      showView(target);
+      e.preventDefault();
+      navigateTo(btn.getAttribute("data-nav"));
     });
 
-    $("#btn-save-notes")?.addEventListener("click", saveNotes);
-    $("#btn-replay")?.addEventListener("click", resetMission);
+    window.addEventListener("hashchange", () => {
+      const hash = (location.hash || "").replace(/^#/, "");
+      const allowed = ["hub", "about", "briefing", "triage", "after"];
+      if (allowed.includes(hash)) navigateTo(hash);
+      else if (isModuleView(hash)) showView(moduleEntry(hash));
+    });
+
+    const saveBtn = $("#btn-save-notes");
+    if (saveBtn) saveBtn.addEventListener("click", saveNotes);
+    const replayBtn = $("#btn-replay");
+    if (replayBtn) replayBtn.addEventListener("click", resetMission);
   }
 
   /** Embedded copy so file:// open works without fetch CORS issues. */
@@ -465,6 +496,11 @@
   };
 
   async function loadMission() {
+    // file:// blocks fetch of local JSON (and logs CORS errors) — go straight to the embed.
+    if (location.protocol === "file:") {
+      mission = EMBEDDED;
+      return;
+    }
     try {
       const res = await fetch("missions/m0.json", { cache: "no-store" });
       if (res.ok) {
@@ -501,6 +537,8 @@
       } else {
         showView(hash);
       }
+    } else if (isModuleView(hash)) {
+      showView(moduleEntry(hash));
     } else {
       showView("hub");
     }

@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="MOD-HEAVY — CyberLabs defensive training floor. Mission Zero: Static on the Line. Blue-team only." />
+  <meta name="description" content="MOD-HEAVY — CyberLabs defensive training floor. Mission Zero: Static on the Line. Mission One: Phish in the Wire. Blue-team only." />
   <meta name="theme-color" content="#0b1018" />
-  <title>MOD-HEAVY · Mission Zero</title>
+  <title>MOD-HEAVY · Operations Floor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='2' y='2' width='12' height='12' fill='none' stroke='%233ecfef' stroke-width='2'/%3E%3Crect x='6' y='6' width='4' height='4' fill='%233ecfef'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -47,7 +48,8 @@
           <li><strong>Document</strong> after-action</li>
         </ul>
         <div class="cta-row">
-          <button type="button" class="btn btn-primary" data-nav="briefing">Start Mission Zero</button>
+          <a class="btn btn-primary" href="#briefing" data-nav="briefing" role="button">Start Mission Zero</a>
+          <a class="btn btn-secondary" href="#m1-briefing" data-nav="m1-briefing" role="button">Start Mission One</a>
           <button type="button" class="btn btn-ghost" data-nav="about">What is this?</button>
         </div>
       </div>
@@ -57,12 +59,18 @@
           <h2>Mission Zero</h2>
           <p class="card-code">M0 · Static on the Line</p>
           <p>Orientation + first alert triage for simulated client <em>Northglass Logistics</em>.</p>
-          <button type="button" class="btn btn-secondary btn-sm" data-nav="briefing">Enter briefing</button>
+          <a class="btn btn-secondary btn-sm" href="#briefing" data-nav="briefing" role="button">Enter briefing</a>
+        </article>
+        <article class="card panel">
+          <h2>Mission One</h2>
+          <p class="card-code">M1 · Phish in the Wire</p>
+          <p>A vendor invoice hits the Northglass AP list. Inspect it, scope who bit, contain, and file the report. ~10–20 min.</p>
+          <a class="btn btn-secondary btn-sm" href="#m1-briefing" data-nav="m1-briefing" role="button">Enter briefing</a>
         </article>
         <article class="card panel muted-card">
           <h2>Later modules</h2>
-          <p class="card-code">M1–M4 · Locked</p>
-          <p>Phishing, endpoint narrative, egress review, after-action reporting — shipping as the floor expands.</p>
+          <p class="card-code">M2–M4 · Locked</p>
+          <p>Endpoint narrative, egress review, after-action reporting — shipping as the floor expands.</p>
         </article>
         <article class="card panel">
           <h2>Rules of engagement</h2>
@@ -86,7 +94,8 @@
           not arcade CRT. Evidence is fabricated (fake company, documentation-range IPs, hashes labeled SIMULATION).
         </p>
         <div class="cta-row">
-          <button type="button" class="btn btn-primary" data-nav="briefing">Start Mission Zero</button>
+          <a class="btn btn-primary" href="#briefing" data-nav="briefing" role="button">Start Mission Zero</a>
+          <a class="btn btn-secondary" href="#m1-briefing" data-nav="m1-briefing" role="button">Start Mission One</a>
           <button type="button" class="btn btn-ghost" data-nav="hub">Back to hub</button>
         </div>
       </div>
@@ -178,13 +187,229 @@
         <p class="toast" id="toast" hidden role="status"></p>
       </div>
     </section>
+
+    <!-- ============ MISSION ONE · Phish in the Wire (js/m1.js) ============ -->
+
+    <!-- M1 BRIEFING -->
+    <section id="view-m1-briefing" class="view" data-view="m1-briefing">
+      <div class="panel">
+        <p class="eyebrow">Briefing Terminal · Mission One</p>
+        <h1 id="m1-brief-title">Mission One — Phish in the Wire</h1>
+        <p class="card-code" id="m1-brief-code">M1 · Phish in the Wire</p>
+        <div class="callout callout-warn">
+          <strong>ROE — Defend only.</strong>
+          <span>Simulated data. Links and attachments are inert — inspect them, never open, detonate, or reply.</span>
+        </div>
+        <div id="m1-brief-body" class="prose"><p class="dim">Loading mission…</p></div>
+        <div class="cta-row">
+          <button type="button" class="btn btn-primary" id="m1-btn-start">Accept shift · open reported email</button>
+          <button type="button" class="btn btn-ghost" id="m1-btn-restart" hidden>Restart mission</button>
+          <button type="button" class="btn btn-ghost" data-nav="hub">Return to hub</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- M1 DETECT -->
+    <section id="view-m1-detect" class="view" data-view="m1-detect">
+      <div class="m1-progress" aria-label="Mission progress"></div>
+      <div id="m1-detect-sam"></div>
+      <div class="mail-layout">
+        <aside class="panel mail-inbox">
+          <p class="eyebrow">Inbox · ap-team (SIM)</p>
+          <ul class="inbox-list" id="m1-inbox"></ul>
+        </aside>
+        <article class="panel mail-message" aria-label="Selected message">
+          <div id="m1-message-body"></div>
+          <div class="mail-status" id="m1-status" role="status" aria-live="polite"></div>
+        </article>
+        <aside class="panel inspector" id="m1-inspector">
+          <p class="eyebrow">Step 1 · Detect — Inspector</p>
+          <div id="m1-insp-body"></div>
+          <h3 class="subhead">Evidence board <span id="m1-judged-count"></span></h3>
+          <ul class="evidence-list" id="m1-evidence"></ul>
+          <div class="cta-row">
+            <button type="button" class="btn btn-primary" id="m1-btn-to-decide" disabled>Continue to Decide</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-m1-back="briefing">Briefing</button>
+          </div>
+          <p class="dim tiny" id="m1-detect-gate"></p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- M1 DECIDE -->
+    <section id="view-m1-decide" class="view" data-view="m1-decide">
+      <div class="m1-progress" aria-label="Mission progress"></div>
+      <div id="m1-decide-sam"></div>
+      <div class="m1-stack">
+        <div class="panel step" id="m1-step-class">
+          <p class="eyebrow">Step 2a · Classify</p>
+          <h2 id="m1-class-prompt">Classify the message</h2>
+          <div class="option-grid" id="m1-class-options" role="group" aria-label="Classification options"></div>
+          <p class="feedback" id="m1-class-feedback" hidden></p>
+        </div>
+
+        <div class="panel step step-locked" id="m1-step-just">
+          <p class="eyebrow">Step 2b · Justify</p>
+          <h2 id="m1-just-prompt">Which evidence supports your call?</h2>
+          <div class="chk-list" id="m1-just-options" role="group" aria-label="Justification options"></div>
+          <div class="cta-row">
+            <button type="button" class="btn btn-secondary" id="m1-btn-just">Submit justification</button>
+          </div>
+          <p class="feedback" id="m1-just-feedback" hidden></p>
+        </div>
+
+        <div class="panel">
+          <p class="eyebrow">Evidence locker · Logs (read-only)</p>
+          <div id="m1-logs"></div>
+        </div>
+
+        <div class="panel step step-locked" id="m1-step-scope">
+          <p class="eyebrow">Step 2c · Scope</p>
+          <h2 id="m1-scope-prompt">What is the scope?</h2>
+          <div class="option-grid" id="m1-scope-options" role="group" aria-label="Scope options"></div>
+          <p class="feedback" id="m1-scope-feedback" hidden></p>
+          <div class="cta-row" id="m1-decide-continue" hidden>
+            <button type="button" class="btn btn-primary" id="m1-btn-to-contain">Continue to Contain</button>
+          </div>
+        </div>
+        <div class="cta-row">
+          <button type="button" class="btn btn-ghost btn-sm" data-m1-back="detect">Back to the email</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- M1 CONTAIN -->
+    <section id="view-m1-contain" class="view" data-view="m1-contain">
+      <div class="m1-progress" aria-label="Mission progress"></div>
+      <div id="m1-contain-sam"></div>
+      <div class="panel">
+        <p class="eyebrow">Step 3 · Contain</p>
+        <h2 id="m1-contain-prompt">Select your containment plan</h2>
+        <div class="chk-list" id="m1-actions" role="group" aria-label="Containment actions"></div>
+        <div class="cta-row">
+          <button type="button" class="btn btn-primary" id="m1-btn-execute" disabled>Execute containment plan</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-m1-back="decide">Review logs</button>
+        </div>
+        <div id="m1-contain-results" hidden>
+          <h3 class="subhead">Execution log (SIM)</h3>
+          <ul class="exec-log" id="m1-contain-log"></ul>
+          <p class="feedback" id="m1-contain-feedback" hidden></p>
+        </div>
+        <div class="cta-row" id="m1-contain-continue" hidden>
+          <button type="button" class="btn btn-primary" id="m1-btn-to-document">Continue to Document</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- M1 DOCUMENT -->
+    <section id="view-m1-document" class="view" data-view="m1-document">
+      <div class="m1-progress" aria-label="Mission progress"></div>
+      <div id="m1-doc-sam"></div>
+      <div class="doc-layout">
+        <div class="panel">
+          <p class="eyebrow">Step 4 · Document — Incident report</p>
+          <h2>NGL-SOC-8907 · Incident report</h2>
+          <p class="dim tiny">Stays in this browser (localStorage). Nothing is uploaded.</p>
+          <div id="m1-report-fields"></div>
+          <p class="feedback bad" id="m1-doc-error" hidden></p>
+          <div class="cta-row">
+            <button type="button" class="btn btn-primary" id="m1-btn-file">File report · debrief</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-m1-back="contain">Back to containment</button>
+          </div>
+        </div>
+        <aside class="panel">
+          <p class="eyebrow">Reference</p>
+          <h3 class="subhead">Flagged indicators</h3>
+          <ul class="evidence-list" id="m1-doc-evidence"></ul>
+          <h3 class="subhead">Containment executed</h3>
+          <ul class="noise-list" id="m1-doc-actions"></ul>
+          <p class="dim tiny">Tip: defang indicators — quillmarsh-frieght[.]example, 203.0.113[.]77.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- M1 DEBRIEF -->
+    <section id="view-m1-debrief" class="view" data-view="m1-debrief">
+      <div class="m1-progress" aria-label="Mission progress"></div>
+      <div class="panel">
+        <p class="eyebrow">After-Action Desk · Mission One</p>
+        <h1>Debrief</h1>
+        <div class="score-banner">
+          <div class="score-num" id="m1-score-num">0</div>
+          <div>
+            <div class="score-label" id="m1-score-label">—</div>
+            <p class="score-note" id="m1-score-note"></p>
+            <p class="dim tiny" id="m1-elapsed"></p>
+          </div>
+        </div>
+
+        <h3 class="subhead">Score breakdown</h3>
+        <div class="table-wrap">
+          <table class="log-table breakdown-table">
+            <tbody id="m1-breakdown"></tbody>
+          </table>
+        </div>
+
+        <h3 class="subhead">Gaps &amp; feedback</h3>
+        <ul class="gap-list" id="m1-gaps"></ul>
+
+        <h3 class="subhead">Your report</h3>
+        <pre class="report-preview" id="m1-report-preview"></pre>
+        <div class="cta-row">
+          <button type="button" class="btn btn-secondary btn-sm" id="m1-btn-download">Download report (.txt)</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="m1-btn-copy">Copy report</button>
+        </div>
+
+        <div class="lore-panel hook-panel">
+          <p class="eyebrow">Incoming · Story</p>
+          <h2 id="m1-hook-title"></h2>
+          <pre class="lore-body" id="m1-hook-body"></pre>
+        </div>
+
+        <div class="lore-panel">
+          <p class="eyebrow" id="m1-lore-eyebrow">Lore crumb</p>
+          <h2 id="m1-lore-title"></h2>
+          <pre class="lore-body" id="m1-lore-body"></pre>
+        </div>
+
+        <div class="cta-row">
+          <button type="button" class="btn btn-ghost" id="m1-btn-replay">Replay Mission One</button>
+          <button type="button" class="btn btn-ghost" data-nav="hub">Ops floor hub</button>
+        </div>
+        <p class="dim tiny">Want this drill for your team? Ask CyberLabs — <a class="text-link" href="https://cyberlabs.group" target="_blank" rel="noopener">cyberlabs.group</a>.</p>
+        <p class="toast" id="m1-toast" hidden role="status"></p>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">
     <span>CyberLabs · MOD-HEAVY · Blue-team training</span>
-    <span class="dim">Northglass Logistics is fictional. No offensive content.</span>
+    <span class="dim">Northglass Logistics, Quillmarsh Freight, and all .example domains are fictional. No offensive content.</span>
   </footer>
 
+  <script>
+    /* Fallback nav if js/main.js fails to load */
+    (function () {
+      function show(name) {
+        document.querySelectorAll(".view").forEach(function (el) {
+          el.classList.toggle("active", el.getAttribute("data-view") === name);
+        });
+      }
+      document.addEventListener("click", function (e) {
+        var t = e.target;
+        if (t && t.nodeType === 3) t = t.parentElement;
+        if (!t || !t.closest) return;
+        var btn = t.closest("[data-nav]");
+        if (!btn) return;
+        var name = btn.getAttribute("data-nav");
+        if (!name) return;
+        show(name);
+      });
+    })();
+  </script>
+  <!-- Classic scripts only (no ES modules) so the page works from file:// and http:// alike. -->
   <script src="js/main.js" defer></script>
+  <script src="js/m1-data.js" defer></script>
+  <script src="js/m1.js" defer></script>
 </body>
 </html>

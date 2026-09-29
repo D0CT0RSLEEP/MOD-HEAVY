@@ -11,7 +11,7 @@ Tagline options:
 ## Site map on cyberlabs.group
 1. **Home** — offer sentence (practical security for SMBs)
 2. **Services** — assessments, hardening, guidance
-3. **Training** — teaser for MOD-HEAVY + “Request access” / “Try Mission Zero”
+3. **Training** — teaser for MOD-HEAVY + “Request access” / “Try Mission Zero” / “Try Mission One: Phish in the Wire”
 4. **Contact** — `hello@cyberlabs.group` (when email is live) + Bland line if desired
 5. Redirect: `cyber-laboratories.com` → `cyberlabs.group`
 
@@ -26,7 +26,9 @@ Tagline options:
 - Clear disclaimer: simulated incidents, educational defense only
 
 ## Funnel
-Visitor → cyberlabs.group/training → Mission Zero free taste → contact for team workshops / retainers
+Visitor → cyberlabs.group/training → Mission Zero free taste → Mission One (phishing drill, downloadable incident report) → contact for team workshops / retainers
+
+Mission One’s debrief links back to cyberlabs.group (“Want this drill for your team?”).
 
 ## Near-term build order
 1. Finish domain + email (paused)
