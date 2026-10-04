@@ -26,7 +26,7 @@
 
 Tuesday 22 Sep 2026, 10:12 ET. A lookalike of the real vendor (`quillmarsh-frieght.example` vs `quillmarsh-freight.example`) sends a past-due invoice to `ap-team@northglass.example` (14 mailboxes). Dana Whitfield (`d.whitfield`) clicks, submits credentials, and approves an MFA push; the attacker signs in from `203.0.113.77`, registers an authenticator, and creates an inbox rule "Invoice sync" that forwards invoice mail to the Reply-To relay mailbox. Marcus Okafor (`m.okafor`) loads the page but doesn't submit, then reports the email.
 
-**ARG thread:** `203.0.113.77` is the same address `NG-WRKSTN-042` beaconed to in Mission Zero — someone was inside before the phish. `X-Mailer: LNTRN Bulk 7` seeds the "LANTERN" thread. The debrief hook teases **Mission Two · Ghost Process** (endpoint / process-tree triage on 042).
+**ARG thread:** `203.0.113.77` is the same address `NG-WRKSTN-042` beaconed to in Mission Zero — someone was inside before the phish. `X-Mailer: LNTRN Bulk 7` seeds the "LANTERN" thread. The debrief hook teases **Mission Two · Ghost Process** and offers a “Start Mission Two” button. (In Mission Two, 042 turns out clean; the fleet hunt for `203.0.113.77` leads to the build server instead — see `MISSION_TWO.md`.)
 
 ## Answer key
 

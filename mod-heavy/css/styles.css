@@ -321,6 +321,10 @@ a.btn {
   opacity: 0.85;
 }
 
+.card-wide {
+  grid-column: 1 / -1;
+}
+
 .callout {
   display: flex;
   flex-direction: column;
@@ -634,7 +638,8 @@ a.btn {
    Mission One · Phish in the Wire (js/m1.js)
    ============================================================ */
 
-.m1-progress {
+.m1-progress,
+.m2-progress {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -694,7 +699,8 @@ a.btn {
   border-color: var(--green);
 }
 
-.m1-timer {
+.m1-timer,
+.m2-timer {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--amber);
@@ -1400,8 +1406,226 @@ a.btn {
   color: var(--cyan);
 }
 
+
+/* ============================================================
+   Mission Two · Ghost Process (js/m2.js)
+   Reuses the Mission One layout (.mail-layout, inspector, evidence
+   board, logs, debrief). Additions: evidence console panes.
+   ============================================================ */
+
+/* console: sources as a tab row on top, evidence pane + inspector below */
+.mail-layout.m2-console {
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+
+.m2-console .mail-inbox {
+  grid-column: 1 / -1;
+  padding: 0.75rem;
+}
+
+.m2-console .inbox-list {
+  flex-direction: row;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+}
+
+.m2-console .inbox-list li {
+  flex: 1 1 0;
+  min-width: 160px;
+}
+
+.m2-console .inbox-item {
+  height: 100%;
+}
+
+.m2-pane {
+  min-width: 0;
+}
+
+.m2-pane .log-table {
+  font-size: 0.7rem;
+}
+
+.m2-pane .log-table th,
+.m2-pane .log-table td,
+#m2-logs .log-table td {
+  padding: 0.35rem 0.45rem;
+}
+
+/* long cells wrap so key columns (paths, IPs, sizes) stay on screen; short ones don't */
+.log-table td.m2-wrap {
+  white-space: normal;
+  overflow-wrap: break-word;
+  min-width: 9rem;
+}
+
+.m2-meta {
+  margin: 0 0 0.85rem;
+  font-size: 0.85rem;
+}
+
+.m2-meta dd {
+  overflow-wrap: anywhere;
+}
+
+/* agent transcript */
+.m2-term {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.55;
+  color: #b9c6d8;
+  max-height: 34rem;
+  overflow: auto;
+}
+
+.m2-term-line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.m2-term-head {
+  color: var(--cyan);
+}
+
+.hs.hs-block.m2-term-hs {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.74rem;
+}
+
+/* PR diff */
+.m2-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0 0 0.85rem;
+}
+
+.m2-diff-file {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.m2-diff-path {
+  padding: 0.4rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(62, 207, 239, 0.06);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--cyan);
+}
+
+.m2-diff-hunk {
+  padding: 0.2rem 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.m2-diff-line,
+.hs.hs-block.m2-diff-line {
+  padding: 0.05rem 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.m2-add {
+  background: rgba(61, 214, 140, 0.08);
+  color: #c8f5df;
+}
+
+.m2-del {
+  background: rgba(240, 113, 120, 0.08);
+  color: #f5d0d2;
+}
+
+.m2-ctx {
+  color: #b9c6d8;
+}
+
+.hs.hs-block.m2-diff-line {
+  border-radius: 0;
+}
+
+/* row-level hotspots in log tables */
+.hs-row {
+  cursor: help;
+  outline: none;
+}
+
+.log-table tbody tr.hs-row td {
+  border-bottom: 1px dashed var(--cyan-dim);
+}
+
+.log-table tbody tr.hs-row:hover,
+.log-table tbody tr.hs-row:focus-visible {
+  background: rgba(62, 207, 239, 0.12);
+}
+
+.log-table tbody tr.hs-row.hs-active {
+  background: rgba(62, 207, 239, 0.16);
+  box-shadow: inset 0 0 0 2px var(--cyan-glow);
+}
+
+.log-table tbody tr.hs-row.hs-flag {
+  background: rgba(240, 113, 120, 0.12);
+}
+
+.log-table tbody tr.hs-row.hs-flag td {
+  border-bottom: 1px solid var(--red);
+}
+
+.log-table tbody tr.hs-row.hs-clear {
+  background: rgba(61, 214, 140, 0.08);
+}
+
+.log-table tbody tr.hs-row.hs-clear td {
+  border-bottom: 1px solid var(--green);
+}
+
+/* evidence board items jump back to their source */
+.ev-jump {
+  cursor: pointer;
+}
+
+.ev-jump:hover strong,
+.ev-jump:focus-visible strong {
+  color: var(--cyan);
+}
+
+.ev-jump:focus-visible {
+  outline: 1px solid var(--cyan-dim);
+}
+
+/* decide: multiple scope questions */
+.m2-scope-q + .m2-scope-q {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.m2-scope-prompt {
+  margin: 0.2rem 0 0;
+  font-weight: 600;
+}
+
 @media (max-width: 1000px) {
-  .mail-layout {
+  .mail-layout,
+  .mail-layout.m2-console {
     grid-template-columns: minmax(0, 1fr);
   }
 

@@ -20,8 +20,8 @@ You are a CyberLabs analyst on shift. Something weird hit the network. Your job 
 |----|------|-------------|-------------|--------|
 | M0 | Static on the Line | Orientation | Read brief, classify alert severity, pick first action | Shipped |
 | M1 | Phish in the Wire | Email / identity | Inspect a phishing email (headers, auth results, links, attachment), classify + scope from proxy/sign-in logs, pick proportional containment, write an incident report | Shipped — see `MISSION_ONE.md` |
-| M2 | Ghost Process | Endpoint / EDR narrative | Triage process tree from a story log, isolate host | Teased at end of M1 |
-| M3 | Exfil Whisper | Network / detection | Spot odd egress in flow summaries, propose block | Planned |
+| M2 | Ghost Process | Endpoint / AI supply chain | Spot a disguised process, read a backdoored AI agent's transcript, catch beaconing and insecure AI-authored code, scope hosts + exposed secrets, contain proportionally, write a report with AI-agent lessons learned | Shipped — see `MISSION_TWO.md` |
+| M3 | Exfil Whisper | Network / detection | Spot odd egress in flow summaries, propose block | Planned — teased at end of M2 |
 | M4 | After Action | Reporting | Write a short incident summary CyberLabs-style | Planned |
 
 Each module: **Detect → Decide → Contain → Document**. No “get shell / crack hash / exploit CVE” steps.
@@ -39,7 +39,7 @@ Unlock cosmetics / dossier pages / ARG lore crumbs — not exploit kits.
 - **Lead** — ambiguous evidence, must justify tradeoffs
 
 ## Evidence style
-All data is **fabricated** and clearly fictional (fake company “Northglass Logistics,” fake IPs in documentation ranges, fake hashes labeled `SIMULATION`, domains on the reserved `.example` TLD). Never copy real victim data, real brands, or real phishing domains.
+All data is **fabricated** and clearly fictional (fake company “Northglass Logistics,” fake IPs in documentation ranges, fake hashes labeled `SIMULATION`, domains on the reserved `.example` TLD, a fictional AI model “Lumen-7”). Never copy real victim data, real brands, real AI models or vendors, or real phishing domains.
 
 ## Tech shape (when we build)
 - Static or light web app in `MOD-HEAVY` repo (like Polybius)

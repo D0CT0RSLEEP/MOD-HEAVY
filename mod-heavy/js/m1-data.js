@@ -1129,7 +1129,7 @@ window.MODHEAVY_M1_EMBED = {
     ],
     "hook": {
       "title": "Shift channel · 14:52Z",
-      "body": "Sam: Nice work on Quillmarsh. One thing is bugging me.\n\nSam: 203.0.113.77 — the phishing page lived there, and that’s where Dana’s session came from. It’s also the address NG-WRKSTN-042 was beaconing to last week. The warehouse PC. Mission Zero wasn’t noise.\n\nSam: Somebody was already inside Northglass before this email landed. The phish was the second move, not the first.\n\nSam: Pull 042’s process tree first thing tomorrow.\n\n>> MISSION TWO · GHOST PROCESS — clearance pending"
+      "body": "Sam: Nice work on Quillmarsh. One thing is bugging me.\n\nSam: 203.0.113.77 — the phishing page lived there, and that’s where Dana’s session came from. It’s also the address NG-WRKSTN-042 was beaconing to last week. The warehouse PC. Mission Zero wasn’t noise.\n\nSam: Somebody was already inside Northglass before this email landed. The phish was the second move, not the first.\n\nSam: Pull 042’s process tree first thing tomorrow.\n\n>> MISSION TWO · GHOST PROCESS — cleared. Open it from the ops floor."
     },
     "loreUnlock": {
       "id": "crumb-m1",

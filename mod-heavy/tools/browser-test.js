@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
- * MOD-HEAVY optional end-to-end browser test (Mission Zero regression + full Mission One runs).
+ * MOD-HEAVY optional end-to-end browser test (Mission Zero regression + full Mission One and
+ * Mission Two runs: perfect, poor/overreaction, underreaction, deep links, mobile).
  * Needs Chrome/Chromium and puppeteer-core (not a project dependency):
- *   npm i --no-save puppeteer-core
+ *   npm i --no-save puppeteer-core      (or install elsewhere and set NODE_PATH=/that/dir/node_modules)
  *   CHROME=/usr/bin/google-chrome node tools/browser-test.js "file://$PWD/index.html" file
  *   python3 -m http.server 8123 &  node tools/browser-test.js "http://127.0.0.1:8123/" http
  * Screenshots land in <os tmpdir>/modheavy-shots. Exit code 0 = all assertions passed, no console errors.
@@ -167,6 +168,156 @@ function assert(c, m) { if (!c) throw new Error("ASSERT: " + m); console.log("  
   assert((await page.$$("#m1-gaps li")).length > 5, "gaps list populated");
   await page.screenshot({ path: `${SHOTS}/${TAG}-8-debrief-poor.png`, fullPage: true });
 
+
+  // --- M1 debrief hands off to Mission Two ---
+  assert((await page.$eval("#m1-hook-body", (e) => e.textContent)).includes("GHOST PROCESS"), "M1 hook still teases Mission Two");
+  await click("#m1-btn-next");
+  assert((await active()) === "m2-briefing", "M1 debrief 'Start Mission Two' opens M2 briefing");
+
+  // --- Mission Two perfect run ---
+  await page.waitForFunction(() => window.MODHEAVY_M2 && window.MODHEAVY_M2.mission);
+  assert((await page.$eval("#m2-brief-body", (e) => e.textContent)).includes("NG-BLD-02"), "M2 briefing rendered from data");
+  assert((await page.$eval("#m2-brief-body", (e) => e.textContent)).includes("Lumen-7"), "M2 briefing names the fictional model");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m2-1-briefing.png`, fullPage: true });
+  await click("#m2-btn-start");
+  assert((await active()) === "m2-detect", "M2 Detect view opens");
+  assert((await page.$$("#m2-sources .inbox-item")).length === 5, "five evidence sources listed");
+  assert((await page.$eval("#m2-source-body", (e) => e.textContent)).includes("[kworker/u8:3]"), "process snapshot shows the disguised process");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m2-2-detect-proc.png`, fullPage: true });
+
+  const m2hs = await page.evaluate(() => Object.entries(window.MODHEAVY_M2.mission.detect.hotspots).map(([id, h]) => [id, h.suspicious, h.source]));
+  for (const [id, sus, src] of m2hs) {
+    await click(`#m2-sources .inbox-item[data-source="${src}"]`);
+    await click(`#m2-source-body [data-hs="${id}"]`);
+    const btns = await page.$$("#m2-insp-body .insp-actions button");
+    assert(btns.length === 2, `M2 inspector opens for ${id}`);
+    await (sus ? btns[0] : btns[1]).click();
+    await sleep(80);
+    if (src === "agent" && id === "tx-persist") await page.screenshot({ path: `${SHOTS}/${TAG}-m2-3-detect-agent.png`, fullPage: true });
+    if (src === "pr" && id === "pr-tls") await page.screenshot({ path: `${SHOTS}/${TAG}-m2-4-detect-pr.png`, fullPage: true });
+    if (src === "net" && id === "net-mirror") await page.screenshot({ path: `${SHOTS}/${TAG}-m2-5-detect-net.png`, fullPage: true });
+  }
+  assert((await page.$eval("#m2-judged-count", (e) => e.textContent)).includes("12/12"), "all 12 M2 items judged");
+  assert((await page.$eval("#m2-detect-gate", (e) => e.textContent)).includes("Everything judged"), "M2 detect gate reports complete");
+  assert(!(await page.$eval("#m2-btn-to-decide", (e) => e.disabled)), "M2 Continue to Decide enabled");
+  await click('#m2-sources .inbox-item[data-source="agentref"]');
+  const refText = await page.$eval("#m2-source-body", (e) => e.textContent);
+  assert(refText.includes("pallet") && !refText.includes("lumen-sync"), "reference transcript opens and has no injected command");
+  // evidence board jumps back to the source of an item
+  await page.evaluate(() => Array.from(document.querySelectorAll("#m2-evidence .ev-jump")).find((li) => /fallback credential/i.test(li.textContent)).click());
+  await sleep(100);
+  assert((await page.$eval("#m2-sources .inbox-item.active", (e) => e.dataset.source)) === "pr", "evidence board item jumps to its source (PR diff)");
+  assert((await page.$eval("#m2-insp-body .insp-title", (e) => e.textContent)).includes("Hardcoded"), "inspector shows the jumped-to item");
+  await click("#m2-btn-to-decide");
+  assert((await active()) === "m2-decide", "M2 Decide view opens");
+
+  await click('#m2-class-options .opt[data-id="supplychain"]');
+  assert((await page.$eval("#m2-class-feedback", (e) => e.className)).includes("good"), "supply-chain classification = good");
+  const just2 = await page.evaluate(() => window.MODHEAVY_M2.mission.decide.justification.options.filter((o) => o.correct).map((o) => o.id));
+  for (const id of just2) await click(`#m2-just-options input[value="${id}"]`);
+  await click("#m2-btn-just");
+  assert((await page.$eval("#m2-just-feedback", (e) => e.className)).includes("good"), "M2 justification = good");
+  assert((await page.$$("#m2-logs table")).length === 2 && (await page.$$("#m2-logs dl")).length === 1, "provenance record + hunt + audit tables rendered");
+  assert((await page.$$('#m2-scope-host .option-grid')).length === 1, "second scope question hidden until the first is answered");
+  await click('#m2-scope-host .option-grid[data-scope="hosts"] .opt[data-id="sc-bld02"]');
+  assert((await page.$eval("#m2-decide-continue", (e) => e.hidden)), "continue hidden until all scope questions answered");
+  await click('#m2-scope-host .option-grid[data-scope="secrets"] .opt[data-id="se-tokens"]');
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m2-6-decide.png`, fullPage: true });
+  await click("#m2-btn-to-contain");
+  assert((await active()) === "m2-contain", "M2 Contain view opens");
+
+  for (const id of ["isolate", "killpersist", "revoke", "pr", "pullmodel", "blockip", "report"]) await click(`#m2-actions input[value="${id}"]`);
+  await click("#m2-btn-execute");
+  const log2 = await page.$eval("#m2-contain-log", (e) => e.textContent);
+  assert(log2.includes("401") && !log2.includes("NOT DONE"), "M2 execution log shows stolen token rejected, nothing missed");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m2-7-contain.png`, fullPage: true });
+  await click("#m2-btn-to-document");
+  assert((await active()) === "m2-document", "M2 Document view opens");
+  await click("#m2-btn-file");
+  assert(!(await page.$eval("#m2-doc-error", (e) => e.hidden)), "M2 empty report is rejected");
+  const R2 = {
+    summary: "Supply-chain compromise: the Lumen-7 AI coding model was backdoored (poisoned community fine-tune). On NG-BLD-02 the agent installed a disguised kworker implant with persistence that beacons to 203.0.113[.]77, and opened PR #482 with a hardcoded password and TLS verification disabled. The lumen-bot token and staging deploy key were exposed.",
+    iocs: "203.0.113[.]77\nhxxps://lumen-sync[.]example/v2/idx\n/home/svc-lumen/.cache/.kw/kworker (SIMULATION:6b1f0e…c42a)\ndbus-index.service\nmodels.hubmirror[.]example/u/lntrn/lumen-7-coder-turbo\nPR #482",
+    actions: "Isolated NG-BLD-02 after a triage image. Killed PID 2290 and removed dbus-index.service persistence and linger. Revoked the lumen-bot token and rotated the staging deploy key. Closed and locked PR #482. Stopped the agent and quarantined the model weights. Blocked 203.0.113.77 and lumen-sync at egress and DNS.",
+    recommendation: "Run AI agents in sandboxed, ephemeral containers. Least privilege: scoped, short-lived tokens. Mandatory human review of AI-authored PRs. Verify model provenance (official source, checksums, signatures). Egress allow-list for build hosts. Secret scanning in CI.",
+  };
+  for (const [k, v] of Object.entries(R2)) await page.type(`#m2-field-${k}`, v, { delay: 0 });
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m2-8-document.png`, fullPage: true });
+  await click("#m2-btn-file");
+  assert((await active()) === "m2-debrief", "M2 Debrief view opens");
+  const m2score = await page.$eval("#m2-score-num", (e) => e.textContent);
+  console.log("  M2 score:", m2score, JSON.stringify(await page.evaluate(() => { const s = window.MODHEAVY_M2.scores(); return { d: s.detect, dc: s.decide, c: s.contain, r: s.report.total }; })));
+  assert(m2score === "100/100", "M2 perfect run scores 100/100");
+  assert((await page.$eval("#m2-hook-body", (e) => e.textContent)).includes("MISSION THREE"), "Mission Three hook shown");
+  assert((await page.$eval("#m2-lore-title", (e) => e.textContent)).includes("LNTRN"), "M2 lore unlocked on pass");
+  const prev2 = await page.$eval("#m2-report-preview", (e) => e.textContent);
+  assert(prev2.includes("LESSONS LEARNED") && prev2.includes("Scope (secrets)"), "M2 report preview includes lessons learned + both scopes");
+  assert((await page.$eval("#m2-gaps", (e) => e.textContent)).includes("No gaps"), "M2 perfect run has no gaps");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m2-9-debrief.png`, fullPage: true });
+
+  // --- M2 replay: overreaction ---
+  await click("#m2-btn-replay");
+  assert((await active()) === "m2-briefing", "M2 replay returns to briefing");
+  assert((await page.$eval("#m2-btn-start", (e) => e.textContent)).includes("Accept"), "M2 state reset after replay");
+  await click("#m2-btn-start");
+  for (const [id, , src] of m2hs.slice(0, 6)) {
+    await click(`#m2-sources .inbox-item[data-source="${src}"]`);
+    await click(`#m2-source-body [data-hs="${id}"]`);
+    const btns = await page.$$("#m2-insp-body .insp-actions button");
+    await btns[0].click(); // flag everything suspicious (proc-cpu is a decoy)
+    await sleep(60);
+  }
+  await click("#m2-btn-to-decide");
+  await click('#m2-class-options .opt[data-id="hallucination"]');
+  await click('#m2-just-options input[value="j-cpu"]');
+  await click('#m2-just-options input[value="j-bot"]');
+  await click("#m2-btn-just");
+  await click('#m2-scope-host .option-grid[data-scope="hosts"] .opt[data-id="sc-all"]');
+  await click('#m2-scope-host .option-grid[data-scope="secrets"] .opt[data-id="se-all"]');
+  await click("#m2-btn-to-contain");
+  for (const id of ["isolate", "wipelaptops", "banai", "shutgit", "probe"]) await click(`#m2-actions input[value="${id}"]`);
+  await click("#m2-btn-execute");
+  await click("#m2-btn-to-document");
+  for (const k of ["summary", "iocs", "actions", "recommendation"]) {
+    await page.$eval(`#m2-field-${k}`, (e) => { e.value = ""; });
+    await page.type(`#m2-field-${k}`, "AI hallucination, wiped everything", { delay: 0 });
+  }
+  await click("#m2-btn-file");
+  const o2 = await page.evaluate(() => { const s = window.MODHEAVY_M2.scores(); return { total: s.total, d: s.detect, dc: s.decide, c: s.contain, r: s.report.total }; });
+  console.log("  M2 overreaction scores:", JSON.stringify(o2));
+  assert(o2.total < 70, "M2 overreaction run fails pass mark");
+  assert(o2.c === 0, "M2 overreaction penalties clamp containment at 0");
+  assert((await page.$eval("#m2-lore-title", (e) => e.textContent)).includes("sealed"), "M2 lore locked on fail");
+  assert((await page.$eval("#m2-gaps", (e) => e.textContent)).includes("Overreaction"), "M2 gaps call out the overreaction");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m2-10-debrief-over.png`, fullPage: true });
+
+  // --- M2 replay: underreaction (kill the process, merge the 'fixed' PR) ---
+  await click("#m2-btn-replay");
+  await click("#m2-btn-start");
+  for (const [id, sus, src] of m2hs) {
+    await click(`#m2-sources .inbox-item[data-source="${src}"]`);
+    await click(`#m2-source-body [data-hs="${id}"]`);
+    const btns = await page.$$("#m2-insp-body .insp-actions button");
+    await (sus ? btns[0] : btns[1]).click();
+    await sleep(40);
+  }
+  await click("#m2-btn-to-decide");
+  await click('#m2-class-options .opt[data-id="supplychain"]');
+  await click('#m2-just-options input[value="j-beacon"]');
+  await click("#m2-btn-just");
+  await click('#m2-scope-host .option-grid[data-scope="hosts"] .opt[data-id="sc-pr"]');
+  await click('#m2-scope-host .option-grid[data-scope="secrets"] .opt[data-id="se-none"]');
+  await click("#m2-btn-to-contain");
+  for (const id of ["killpersist", "mergefix"]) await click(`#m2-actions input[value="${id}"]`);
+  await click("#m2-btn-execute");
+  const ulog = await page.$eval("#m2-contain-log", (e) => e.textContent);
+  assert((ulog.match(/NOT DONE/g) || []).length === 5, "M2 underreaction leaves 5 required actions undone");
+  const u2 = await page.evaluate(() => window.MODHEAVY_M2.scores().contain);
+  assert(u2 === 1, "M2 underreaction containment = 4 − 3 = 1");
+
+  // --- M1 still intact after M2 runs (independent state) ---
+  assert((await page.evaluate(() => window.MODHEAVY_M1.state.phase)) === "debrief", "M1 state untouched by M2");
+
   // --- deep links with a real reload (init path) and hashchange path ---
   await page.goto(BASE + "#m1-contain", { waitUntil: "load" });
   await page.reload({ waitUntil: "load" });
@@ -184,6 +335,22 @@ function assert(c, m) { if (!c) throw new Error("ASSERT: " + m); console.log("  
   await page.reload({ waitUntil: "load" });
   await sleep(600);
   assert((await active()) === "m1-briefing", "reload at #m1-briefing shows M1 briefing");
+  await page.goto(BASE + "#m2-contain", { waitUntil: "load" });
+  await page.reload({ waitUntil: "load" });
+  await sleep(600);
+  assert((await active()) === "m2-briefing", "reload at #m2-contain lands on M2 briefing");
+  assert((await page.$eval("#m2-btn-start", (e) => e.textContent)).includes("Accept"), "fresh M2 state after reload");
+  await page.goto(BASE + "#m2-debrief", { waitUntil: "load" }); // same-document hash change
+  await sleep(400);
+  assert((await active()) === "m2-briefing", "hashchange to #m2-debrief routes to M2 briefing");
+  await page.goto(BASE + "#about", { waitUntil: "load" });
+  await sleep(300);
+  await click('#view-about [data-nav="m2-briefing"]');
+  assert((await active()) === "m2-briefing", "About page 'Start Mission Two' opens M2 briefing");
+  await page.goto(BASE + "#hub", { waitUntil: "load" });
+  await sleep(300);
+  await click('.hero [data-nav="m2-briefing"]');
+  assert((await active()) === "m2-briefing", "hub hero 'Start Mission Two' opens M2 briefing");
 
   // mobile layout snapshot
   await page.setViewport({ width: 390, height: 844 });
@@ -197,6 +364,17 @@ function assert(c, m) { if (!c) throw new Error("ASSERT: " + m); console.log("  
   await click('#m1-message-body [data-hs="link"]');
   await sleep(700);
   await page.screenshot({ path: `${SHOTS}/${TAG}-10-mobile-inspector.png`, fullPage: false });
+  await page.goto(BASE + "#hub", { waitUntil: "load" });
+  await page.reload({ waitUntil: "load" });
+  await sleep(500);
+  await click('.card [data-nav="m2-briefing"]');
+  assert((await active()) === "m2-briefing", "M2 hub card opens briefing (mobile)");
+  await click("#m2-btn-start");
+  await sleep(700);
+  await page.screenshot({ path: `${SHOTS}/${TAG}-11-mobile-m2-detect.png`, fullPage: false });
+  await click('#m2-source-body [data-hs="proc-name"]');
+  await sleep(700);
+  await page.screenshot({ path: `${SHOTS}/${TAG}-12-mobile-m2-inspector.png`, fullPage: false });
   // hub snapshot
   await page.setViewport({ width: 1280, height: 900 });
   await page.goto(BASE + "#hub", { waitUntil: "load" });

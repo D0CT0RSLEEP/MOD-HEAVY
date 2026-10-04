@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="MOD-HEAVY — CyberLabs defensive training floor. Mission Zero: Static on the Line. Mission One: Phish in the Wire. Blue-team only." />
+  <meta name="description" content="MOD-HEAVY — CyberLabs defensive training floor. Mission Zero: Static on the Line. Mission One: Phish in the Wire. Mission Two: Ghost Process. Blue-team only." />
   <meta name="theme-color" content="#0b1018" />
   <title>MOD-HEAVY · Operations Floor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -50,6 +50,7 @@
         <div class="cta-row">
           <a class="btn btn-primary" href="#briefing" data-nav="briefing" role="button">Start Mission Zero</a>
           <a class="btn btn-secondary" href="#m1-briefing" data-nav="m1-briefing" role="button">Start Mission One</a>
+          <a class="btn btn-secondary" href="#m2-briefing" data-nav="m2-briefing" role="button">Start Mission Two</a>
           <button type="button" class="btn btn-ghost" data-nav="about">What is this?</button>
         </div>
       </div>
@@ -67,12 +68,18 @@
           <p>A vendor invoice hits the Northglass AP list. Inspect it, scope who bit, contain, and file the report. ~10–20 min.</p>
           <a class="btn btn-secondary btn-sm" href="#m1-briefing" data-nav="m1-briefing" role="button">Enter briefing</a>
         </article>
+        <article class="card panel">
+          <h2>Mission Two</h2>
+          <p class="card-code">M2 · Ghost Process</p>
+          <p>Northglass’ AI coding agent did something nobody asked for. Find the disguised process, scope the leaked secrets, contain, and report. ~15–25 min.</p>
+          <a class="btn btn-secondary btn-sm" href="#m2-briefing" data-nav="m2-briefing" role="button">Enter briefing</a>
+        </article>
         <article class="card panel muted-card">
           <h2>Later modules</h2>
-          <p class="card-code">M2–M4 · Locked</p>
-          <p>Endpoint narrative, egress review, after-action reporting — shipping as the floor expands.</p>
+          <p class="card-code">M3–M4 · Locked</p>
+          <p>Egress review, after-action reporting — shipping as the floor expands.</p>
         </article>
-        <article class="card panel">
+        <article class="card panel card-wide">
           <h2>Rules of engagement</h2>
           <p>Blue team only. No exploitation, no pwn, no attack playbooks. Curiosity stops at containment.</p>
           <button type="button" class="btn btn-ghost btn-sm" data-nav="briefing">Read ROE</button>
@@ -96,6 +103,7 @@
         <div class="cta-row">
           <a class="btn btn-primary" href="#briefing" data-nav="briefing" role="button">Start Mission Zero</a>
           <a class="btn btn-secondary" href="#m1-briefing" data-nav="m1-briefing" role="button">Start Mission One</a>
+          <a class="btn btn-secondary" href="#m2-briefing" data-nav="m2-briefing" role="button">Start Mission Two</a>
           <button type="button" class="btn btn-ghost" data-nav="hub">Back to hub</button>
         </div>
       </div>
@@ -373,6 +381,7 @@
         </div>
 
         <div class="cta-row">
+          <a class="btn btn-primary" href="#m2-briefing" data-nav="m2-briefing" role="button" id="m1-btn-next">Start Mission Two</a>
           <button type="button" class="btn btn-ghost" id="m1-btn-replay">Replay Mission One</button>
           <button type="button" class="btn btn-ghost" data-nav="hub">Ops floor hub</button>
         </div>
@@ -380,11 +389,202 @@
         <p class="toast" id="m1-toast" hidden role="status"></p>
       </div>
     </section>
+
+    <!-- ============ MISSION TWO · Ghost Process (js/m2.js) ============ -->
+
+    <!-- M2 BRIEFING -->
+    <section id="view-m2-briefing" class="view" data-view="m2-briefing">
+      <div class="panel">
+        <p class="eyebrow">Briefing Terminal · Mission Two</p>
+        <h1 id="m2-brief-title">Mission Two — Ghost Process</h1>
+        <p class="card-code" id="m2-brief-code">M2 · Ghost Process</p>
+        <div class="callout callout-warn">
+          <strong>ROE — Defend only.</strong>
+          <span>Simulated data. Evidence is display-only — never run, download, or test it, and never touch attacker infrastructure.</span>
+        </div>
+        <div id="m2-brief-body" class="prose"><p class="dim">Loading mission…</p></div>
+        <div class="cta-row">
+          <button type="button" class="btn btn-primary" id="m2-btn-start">Accept shift · open evidence</button>
+          <button type="button" class="btn btn-ghost" id="m2-btn-restart" hidden>Restart mission</button>
+          <button type="button" class="btn btn-ghost" data-nav="hub">Return to hub</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- M2 DETECT -->
+    <section id="view-m2-detect" class="view" data-view="m2-detect">
+      <div class="m2-progress" aria-label="Mission progress"></div>
+      <div id="m2-detect-sam"></div>
+      <div class="mail-layout m2-console">
+        <aside class="panel mail-inbox">
+          <p class="eyebrow">Evidence sources · NG-BLD-02 (SIM)</p>
+          <ul class="inbox-list" id="m2-sources"></ul>
+        </aside>
+        <article class="panel m2-pane" aria-label="Selected evidence">
+          <div id="m2-source-body"></div>
+        </article>
+        <aside class="panel inspector" id="m2-inspector">
+          <p class="eyebrow">Step 1 · Detect — Inspector</p>
+          <div id="m2-insp-body"></div>
+          <h3 class="subhead">Evidence board <span id="m2-judged-count"></span></h3>
+          <ul class="evidence-list" id="m2-evidence"></ul>
+          <div class="cta-row">
+            <button type="button" class="btn btn-primary" id="m2-btn-to-decide" disabled>Continue to Decide</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-m2-back="briefing">Briefing</button>
+          </div>
+          <p class="dim tiny" id="m2-detect-gate"></p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- M2 DECIDE -->
+    <section id="view-m2-decide" class="view" data-view="m2-decide">
+      <div class="m2-progress" aria-label="Mission progress"></div>
+      <div id="m2-decide-sam"></div>
+      <div class="m1-stack">
+        <div class="panel step" id="m2-step-class">
+          <p class="eyebrow">Step 2a · Classify</p>
+          <h2 id="m2-class-prompt">Classify the incident</h2>
+          <div class="option-grid" id="m2-class-options" role="group" aria-label="Classification options"></div>
+          <p class="feedback" id="m2-class-feedback" hidden></p>
+        </div>
+
+        <div class="panel step step-locked" id="m2-step-just">
+          <p class="eyebrow">Step 2b · Justify</p>
+          <h2 id="m2-just-prompt">Which evidence supports your call?</h2>
+          <div class="chk-list" id="m2-just-options" role="group" aria-label="Justification options"></div>
+          <div class="cta-row">
+            <button type="button" class="btn btn-secondary" id="m2-btn-just">Submit justification</button>
+          </div>
+          <p class="feedback" id="m2-just-feedback" hidden></p>
+        </div>
+
+        <div class="panel">
+          <p class="eyebrow">Evidence locker · Provenance, hunt &amp; audit (read-only)</p>
+          <div id="m2-logs"></div>
+        </div>
+
+        <div class="panel step step-locked" id="m2-step-scope">
+          <p class="eyebrow">Step 2c · Scope</p>
+          <h2>Scope the incident</h2>
+          <div id="m2-scope-host"></div>
+          <div class="cta-row" id="m2-decide-continue" hidden>
+            <button type="button" class="btn btn-primary" id="m2-btn-to-contain">Continue to Contain</button>
+          </div>
+        </div>
+        <div class="cta-row">
+          <button type="button" class="btn btn-ghost btn-sm" data-m2-back="detect">Back to the evidence</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- M2 CONTAIN -->
+    <section id="view-m2-contain" class="view" data-view="m2-contain">
+      <div class="m2-progress" aria-label="Mission progress"></div>
+      <div id="m2-contain-sam"></div>
+      <div class="panel">
+        <p class="eyebrow">Step 3 · Contain</p>
+        <h2 id="m2-contain-prompt">Select your containment plan</h2>
+        <div class="chk-list" id="m2-actions" role="group" aria-label="Containment actions"></div>
+        <div class="cta-row">
+          <button type="button" class="btn btn-primary" id="m2-btn-execute" disabled>Execute containment plan</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-m2-back="decide">Review logs</button>
+        </div>
+        <div id="m2-contain-results" hidden>
+          <h3 class="subhead">Execution log (SIM)</h3>
+          <ul class="exec-log" id="m2-contain-log"></ul>
+          <p class="feedback" id="m2-contain-feedback" hidden></p>
+        </div>
+        <div class="cta-row" id="m2-contain-continue" hidden>
+          <button type="button" class="btn btn-primary" id="m2-btn-to-document">Continue to Document</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- M2 DOCUMENT -->
+    <section id="view-m2-document" class="view" data-view="m2-document">
+      <div class="m2-progress" aria-label="Mission progress"></div>
+      <div id="m2-doc-sam"></div>
+      <div class="doc-layout">
+        <div class="panel">
+          <p class="eyebrow">Step 4 · Document — Incident report</p>
+          <h2>NGL-SOC-8936 · Incident report</h2>
+          <p class="dim tiny">Stays in this browser (localStorage). Nothing is uploaded.</p>
+          <div id="m2-report-fields"></div>
+          <p class="feedback bad" id="m2-doc-error" hidden></p>
+          <div class="cta-row">
+            <button type="button" class="btn btn-primary" id="m2-btn-file">File report · debrief</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-m2-back="contain">Back to containment</button>
+          </div>
+        </div>
+        <aside class="panel">
+          <p class="eyebrow">Reference</p>
+          <h3 class="subhead">Flagged indicators</h3>
+          <ul class="evidence-list" id="m2-doc-evidence"></ul>
+          <h3 class="subhead">Containment executed</h3>
+          <ul class="noise-list" id="m2-doc-actions"></ul>
+          <p class="dim tiny">Tip: defang indicators — lumen-sync[.]example, 203.0.113[.]77.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- M2 DEBRIEF -->
+    <section id="view-m2-debrief" class="view" data-view="m2-debrief">
+      <div class="m2-progress" aria-label="Mission progress"></div>
+      <div class="panel">
+        <p class="eyebrow">After-Action Desk · Mission Two</p>
+        <h1>Debrief</h1>
+        <div class="score-banner">
+          <div class="score-num" id="m2-score-num">0</div>
+          <div>
+            <div class="score-label" id="m2-score-label">—</div>
+            <p class="score-note" id="m2-score-note"></p>
+            <p class="dim tiny" id="m2-elapsed"></p>
+          </div>
+        </div>
+
+        <h3 class="subhead">Score breakdown</h3>
+        <div class="table-wrap">
+          <table class="log-table breakdown-table">
+            <tbody id="m2-breakdown"></tbody>
+          </table>
+        </div>
+
+        <h3 class="subhead">Gaps &amp; feedback</h3>
+        <ul class="gap-list" id="m2-gaps"></ul>
+
+        <h3 class="subhead">Your report</h3>
+        <pre class="report-preview" id="m2-report-preview"></pre>
+        <div class="cta-row">
+          <button type="button" class="btn btn-secondary btn-sm" id="m2-btn-download">Download report (.txt)</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="m2-btn-copy">Copy report</button>
+        </div>
+
+        <div class="lore-panel hook-panel">
+          <p class="eyebrow">Incoming · Story</p>
+          <h2 id="m2-hook-title"></h2>
+          <pre class="lore-body" id="m2-hook-body"></pre>
+        </div>
+
+        <div class="lore-panel">
+          <p class="eyebrow" id="m2-lore-eyebrow">Lore crumb</p>
+          <h2 id="m2-lore-title"></h2>
+          <pre class="lore-body" id="m2-lore-body"></pre>
+        </div>
+
+        <div class="cta-row">
+          <button type="button" class="btn btn-ghost" id="m2-btn-replay">Replay Mission Two</button>
+          <button type="button" class="btn btn-ghost" data-nav="hub">Ops floor hub</button>
+        </div>
+        <p class="dim tiny">Want this drill for your team? Ask CyberLabs — <a class="text-link" href="https://cyberlabs.group" target="_blank" rel="noopener">cyberlabs.group</a>.</p>
+        <p class="toast" id="m2-toast" hidden role="status"></p>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">
     <span>CyberLabs · MOD-HEAVY · Blue-team training</span>
-    <span class="dim">Northglass Logistics, Quillmarsh Freight, and all .example domains are fictional. No offensive content.</span>
+    <span class="dim">Northglass Logistics, Quillmarsh Freight, the Lumen-7 model, and all .example domains are fictional. No offensive content.</span>
   </footer>
 
   <script>
@@ -411,5 +611,7 @@
   <script src="js/main.js" defer></script>
   <script src="js/m1-data.js" defer></script>
   <script src="js/m1.js" defer></script>
+  <script src="js/m2-data.js" defer></script>
+  <script src="js/m2.js" defer></script>
 </body>
 </html>
