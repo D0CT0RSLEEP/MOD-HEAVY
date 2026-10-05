@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * MOD-HEAVY optional end-to-end browser test (Mission Zero regression + full Mission One and
- * Mission Two runs: perfect, poor/overreaction, underreaction, deep links, mobile).
+ * MOD-HEAVY optional end-to-end browser test (Mission Zero regression + full Mission One,
+ * Mission Two, and Mission Three runs: perfect, poor/overreaction, underreaction, hand-offs,
+ * deep links, mobile).
  * Needs Chrome/Chromium and puppeteer-core (not a project dependency):
  *   npm i --no-save puppeteer-core      (or install elsewhere and set NODE_PATH=/that/dir/node_modules)
  *   CHROME=/usr/bin/google-chrome node tools/browser-test.js "file://$PWD/index.html" file
@@ -290,6 +291,13 @@ function assert(c, m) { if (!c) throw new Error("ASSERT: " + m); console.log("  
   assert((await page.$eval("#m2-lore-title", (e) => e.textContent)).includes("sealed"), "M2 lore locked on fail");
   assert((await page.$eval("#m2-gaps", (e) => e.textContent)).includes("Overreaction"), "M2 gaps call out the overreaction");
   await page.screenshot({ path: `${SHOTS}/${TAG}-m2-10-debrief-over.png`, fullPage: true });
+  await click("#m2-btn-next");
+  assert((await active()) === "m3-briefing", "M2 debrief 'Start Mission Three' opens M3 briefing");
+  await click('#view-m3-briefing [data-nav="hub"]');
+  await click('.hero [data-nav="m2-briefing"]');
+  assert((await page.$eval("#m2-btn-start", (e) => e.textContent)).includes("View debrief"), "M2 briefing offers 'View debrief' after finishing");
+  await click("#m2-btn-start");
+  assert((await active()) === "m2-debrief", "M2 debrief resumes from briefing");
 
   // --- M2 replay: underreaction (kill the process, merge the 'fixed' PR) ---
   await click("#m2-btn-replay");
@@ -314,6 +322,155 @@ function assert(c, m) { if (!c) throw new Error("ASSERT: " + m); console.log("  
   assert((ulog.match(/NOT DONE/g) || []).length === 5, "M2 underreaction leaves 5 required actions undone");
   const u2 = await page.evaluate(() => window.MODHEAVY_M2.scores().contain);
   assert(u2 === 1, "M2 underreaction containment = 4 − 3 = 1");
+
+  // ================= Mission Three · Exfil Whisper =================
+  await page.goto(BASE + "#m3-briefing", { waitUntil: "load" }); // same-document hash change keeps M1/M2 state
+  await sleep(300);
+  assert((await active()) === "m3-briefing", "hashchange to #m3-briefing opens M3 briefing");
+  await page.waitForFunction(() => window.MODHEAVY_M3 && window.MODHEAVY_M3.mission);
+  const m3brief = await page.$eval("#m3-brief-body", (e) => e.textContent);
+  assert(m3brief.includes("NG-WH-PRINT-07") && m3brief.includes("NGL-SOC-8961"), "M3 briefing rendered from data");
+  assert(m3brief.includes("Nothing in this mission is runnable or real"), "M3 disclaimer shown on briefing");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m3-1-briefing.png`, fullPage: true });
+  await click("#m3-btn-start");
+  assert((await active()) === "m3-detect", "M3 Detect view opens");
+  assert((await page.$$("#m3-sources .inbox-item")).length === 5, "M3: five evidence sources listed");
+  assert((await page.$eval("#m3-source-body", (e) => e.textContent)).includes("cdn-telemetry-sync.example"), "M3 DNS log shows the exfil domain");
+
+  const m3hs = await page.evaluate(() => Object.entries(window.MODHEAVY_M3.mission.detect.hotspots).map(([id, h]) => [id, h.suspicious, h.source]));
+  assert(m3hs.length === 12, "M3 has 12 hotspots");
+  for (const [id, sus, src] of m3hs) {
+    await click(`#m3-sources .inbox-item[data-source="${src}"]`);
+    await click(`#m3-source-body [data-hs="${id}"]`);
+    const btns = await page.$$("#m3-insp-body .insp-actions button");
+    assert(btns.length === 2, `M3 inspector opens for ${id}`);
+    await (sus ? btns[0] : btns[1]).click();
+    await sleep(80);
+    if (id === "cron-script") await page.screenshot({ path: `${SHOTS}/${TAG}-m3-2-detect-cron.png`, fullPage: true });
+    if (id === "stage-spool") await page.screenshot({ path: `${SHOTS}/${TAG}-m3-3-detect-stage.png`, fullPage: true });
+    if (id === "egress-cadence") await page.screenshot({ path: `${SHOTS}/${TAG}-m3-4-detect-egress.png`, fullPage: true });
+  }
+  assert((await page.$eval("#m3-judged-count", (e) => e.textContent)).includes("12/12"), "all 12 M3 items judged");
+  assert((await page.$eval("#m3-detect-gate", (e) => e.textContent)).includes("Everything judged"), "M3 detect gate reports complete");
+  await click('#m3-sources .inbox-item[data-source="dnsref"]');
+  const ref3 = await page.$eval("#m3-source-body", (e) => e.textContent);
+  assert(ref3.includes("NG-WH-PRINT-09") && !ref3.includes("cdn-telemetry-sync"), "M3 reference profile opens and has no exfil domain");
+  assert((await page.$$("#m3-source-body [data-hs]")).length === 0, "M3 reference profile has nothing to judge");
+  await page.evaluate(() => Array.from(document.querySelectorAll("#m3-evidence .ev-jump")).find((li) => /Staged billing/i.test(li.textContent)).click());
+  await sleep(100);
+  assert((await page.$eval("#m3-sources .inbox-item.active", (e) => e.dataset.source)) === "stage", "M3 evidence board item jumps to its source (staging dir)");
+  await click("#m3-btn-to-decide");
+  assert((await active()) === "m3-decide", "M3 Decide view opens");
+
+  await click('#m3-class-options .opt[data-id="dnsexfil"]');
+  assert((await page.$eval("#m3-class-feedback", (e) => e.className)).includes("good"), "DNS-exfil classification = good");
+  const just3 = await page.evaluate(() => window.MODHEAVY_M3.mission.decide.justification.options.filter((o) => o.correct).map((o) => o.id));
+  for (const id of just3) await click(`#m3-just-options input[value="${id}"]`);
+  await click("#m3-btn-just");
+  assert((await page.$eval("#m3-just-feedback", (e) => e.className)).includes("good"), "M3 justification = good");
+  assert((await page.$$("#m3-logs table")).length === 2 && (await page.$$("#m3-logs dl")).length === 1, "M3 asset record + hunt + exfil estimate rendered");
+  assert((await page.$$('#m3-scope-host .option-grid')).length === 1, "M3 second scope question hidden until the first is answered");
+  await click('#m3-scope-host .option-grid[data-scope="host"] .opt[data-id="sc-print07"]');
+  assert((await page.$eval("#m3-decide-continue", (e) => e.hidden)), "M3 continue hidden until all scope questions answered");
+  await click('#m3-scope-host .option-grid[data-scope="data"] .opt[data-id="da-partial"]');
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m3-5-decide.png`, fullPage: true });
+  await click("#m3-btn-to-contain");
+  assert((await active()) === "m3-contain", "M3 Contain view opens");
+
+  for (const id of ["blockdns", "isolate", "killpersist", "revoke", "dataowner", "hunt", "report"]) await click(`#m3-actions input[value="${id}"]`);
+  await click("#m3-btn-execute");
+  const log3 = await page.$eval("#m3-contain-log", (e) => e.textContent);
+  assert(log3.includes("sinkhole") && !log3.includes("NOT DONE"), "M3 execution log shows the channel cut, nothing missed");
+  assert((await page.evaluate(() => window.MODHEAVY_M3.scores().contain)) === 25, "M3 full containment = 25 (neutral report adds 0)");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m3-6-contain.png`, fullPage: true });
+  await click("#m3-btn-to-document");
+  assert((await active()) === "m3-document", "M3 Document view opens");
+  await click("#m3-btn-file");
+  assert(!(await page.$eval("#m3-doc-error", (e) => e.hidden)), "M3 empty report is rejected");
+  const R3 = {
+    summary: "Covert DNS tunneling exfiltration: an implant on NG-WH-PRINT-07, an overlooked warehouse label printer, staged billing exports (Q3 invoice archive and AP vendor master) from the fileshare and leaked about 0.95 MB over DNS to a look-alike domain.",
+    iocs: "cdn-telemetry-sync[.]example\n198.51.100[.]53\n/home/svc-print/.cache/.spool/.sync/\nlabelcache (SIMULATION:9ad3f1…e70c)\nlabelcache.timer (per-minute cron 01:00-04:00)\nNG-WH-PRINT-07",
+    actions: "Sinkholed cdn-telemetry-sync and blocked 198.51.100.53 at egress; pinned the warehouse VLAN to the internal resolver. Isolated NG-WH-PRINT-07 after a triage image. Removed the labelcache binary and its timer/cron persistence. Rotated svc-print credentials and revoked its fileshare access. Notified the data-protection lead and billing owner for breach assessment. Ran a fleet hunt for the domain and staging dir.",
+    recommendation: "Add DNS monitoring and analytics for entropy and newly seen domains. Egress control: force the internal resolver and block direct port 53 outbound. Least privilege: read-only, scoped fileshare access for appliances. Put every appliance in the asset inventory with EDR coverage. DLP on billing exports. Threat hunt for persistence after any compromise.",
+  };
+  for (const [k, v] of Object.entries(R3)) await page.type(`#m3-field-${k}`, v, { delay: 0 });
+  await click("#m3-btn-file");
+  assert((await active()) === "m3-debrief", "M3 Debrief view opens");
+  const m3score = await page.$eval("#m3-score-num", (e) => e.textContent);
+  console.log("  M3 score:", m3score, JSON.stringify(await page.evaluate(() => { const s = window.MODHEAVY_M3.scores(); return { d: s.detect, dc: s.decide, c: s.contain, r: s.report.total }; })));
+  assert(m3score === "100/100", "M3 perfect run scores 100/100");
+  assert((await page.$eval("#m3-score-label", (e) => e.textContent)).includes("lead-ready"), "M3 top score band shown");
+  assert((await page.$eval("#m3-hook-body", (e) => e.textContent)).includes("MISSION FOUR"), "Mission Four hook shown");
+  assert((await page.$eval("#m3-lore-title", (e) => e.textContent)).includes("EXW"), "M3 lore unlocked on pass");
+  const prev3 = await page.$eval("#m3-report-preview", (e) => e.textContent);
+  assert(prev3.includes("NGL-SOC-8961") && prev3.includes("Scope (data)") && prev3.includes("LESSONS LEARNED"), "M3 report preview includes ticket, both scopes, lessons learned");
+  assert((await page.$eval("#m3-gaps", (e) => e.textContent)).includes("No gaps"), "M3 perfect run has no gaps");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m3-7-debrief.png`, fullPage: true });
+
+  // --- M3 replay: overreaction + ROE violation ---
+  await click("#m3-btn-replay");
+  assert((await active()) === "m3-briefing", "M3 replay returns to briefing");
+  assert((await page.$eval("#m3-btn-start", (e) => e.textContent)).includes("Accept"), "M3 state reset after replay");
+  await click("#m3-btn-start");
+  for (const [id, , src] of m3hs.slice(0, 6)) {
+    await click(`#m3-sources .inbox-item[data-source="${src}"]`);
+    await click(`#m3-source-body [data-hs="${id}"]`);
+    const btns = await page.$$("#m3-insp-body .insp-actions button");
+    await btns[0].click(); // flag everything suspicious (dns-cdn is a decoy)
+    await sleep(60);
+  }
+  await click("#m3-btn-to-decide");
+  await click('#m3-class-options .opt[data-id="fp"]');
+  assert((await page.$eval("#m3-class-feedback", (e) => e.className)).includes("bad"), "M3 false-positive classification = bad");
+  await click('#m3-just-options input[value="j-volume"]');
+  await click('#m3-just-options input[value="j-busy"]');
+  await click("#m3-btn-just");
+  await click('#m3-scope-host .option-grid[data-scope="host"] .opt[data-id="sc-allwh"]');
+  await click('#m3-scope-host .option-grid[data-scope="data"] .opt[data-id="da-everything"]');
+  await click("#m3-btn-to-contain");
+  for (const id of ["isolate", "blockalldns", "shutwarehouse", "reimageall", "flood"]) await click(`#m3-actions input[value="${id}"]`);
+  await click("#m3-btn-execute");
+  await click("#m3-btn-to-document");
+  for (const k of ["summary", "iocs", "actions", "recommendation"]) {
+    await page.$eval(`#m3-field-${k}`, (e) => { e.value = ""; });
+    await page.type(`#m3-field-${k}`, "cdn noise, shut it all down", { delay: 0 });
+  }
+  await click("#m3-btn-file");
+  const o3 = await page.evaluate(() => { const s = window.MODHEAVY_M3.scores(); return { total: s.total, d: s.detect, dc: s.decide, c: s.contain, r: s.report.total }; });
+  console.log("  M3 overreaction scores:", JSON.stringify(o3));
+  assert(o3.total < 70, "M3 overreaction run fails pass mark");
+  assert(o3.c === 0, "M3 overreaction penalties clamp containment at 0");
+  assert((await page.$eval("#m3-lore-title", (e) => e.textContent)).includes("sealed"), "M3 lore locked on fail");
+  const g3 = await page.$eval("#m3-gaps", (e) => e.textContent);
+  assert(g3.includes("Overreaction") && g3.includes("Hard stop"), "M3 gaps call out the overreaction and the ROE violation");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m3-8-debrief-over.png`, fullPage: true });
+
+  // --- M3 replay: underreaction (remove the binary, flush cache, close) ---
+  await click("#m3-btn-replay");
+  await click("#m3-btn-start");
+  for (const [id, sus, src] of m3hs) {
+    await click(`#m3-sources .inbox-item[data-source="${src}"]`);
+    await click(`#m3-source-body [data-hs="${id}"]`);
+    const btns = await page.$$("#m3-insp-body .insp-actions button");
+    await (sus ? btns[0] : btns[1]).click();
+    await sleep(40);
+  }
+  await click("#m3-btn-to-decide");
+  await click('#m3-class-options .opt[data-id="dnsexfil"]');
+  await click('#m3-just-options input[value="j-cadence"]');
+  await click("#m3-btn-just");
+  await click('#m3-scope-host .option-grid[data-scope="host"] .opt[data-id="sc-fileshare"]');
+  await click('#m3-scope-host .option-grid[data-scope="data"] .opt[data-id="da-none"]');
+  await click("#m3-btn-to-contain");
+  for (const id of ["killpersist", "cacheflush"]) await click(`#m3-actions input[value="${id}"]`);
+  await click("#m3-btn-execute");
+  const ulog3 = await page.$eval("#m3-contain-log", (e) => e.textContent);
+  assert((ulog3.match(/NOT DONE/g) || []).length === 5, "M3 underreaction leaves 5 required actions undone");
+  assert((await page.evaluate(() => window.MODHEAVY_M3.scores().contain)) === 1, "M3 underreaction containment = 4 − 3 = 1");
+  // pass-threshold boundary: perfect detect/decide/contain + an empty-ish report lands exactly where scoring says
+  const pt = await page.evaluate(() => window.MODHEAVY_M3.mission.debrief.passScore);
+  assert(pt === 70, "M3 pass mark is 70");
+  assert((await page.evaluate(() => window.MODHEAVY_M2.state.phase)) === "contain", "M2 state untouched by M3");
 
   // --- M1 still intact after M2 runs (independent state) ---
   assert((await page.evaluate(() => window.MODHEAVY_M1.state.phase)) === "debrief", "M1 state untouched by M2");
@@ -343,6 +500,22 @@ function assert(c, m) { if (!c) throw new Error("ASSERT: " + m); console.log("  
   await page.goto(BASE + "#m2-debrief", { waitUntil: "load" }); // same-document hash change
   await sleep(400);
   assert((await active()) === "m2-briefing", "hashchange to #m2-debrief routes to M2 briefing");
+  await page.goto(BASE + "#m3-contain", { waitUntil: "load" });
+  await page.reload({ waitUntil: "load" });
+  await sleep(600);
+  assert((await active()) === "m3-briefing", "reload at #m3-contain lands on M3 briefing");
+  assert((await page.$eval("#m3-btn-start", (e) => e.textContent)).includes("Accept"), "fresh M3 state after reload");
+  await page.goto(BASE + "#m3-debrief", { waitUntil: "load" }); // same-document hash change
+  await sleep(400);
+  assert((await active()) === "m3-briefing", "hashchange to #m3-debrief routes to M3 briefing");
+  await page.goto(BASE + "#about", { waitUntil: "load" });
+  await sleep(300);
+  await click('#view-about [data-nav="m3-briefing"]');
+  assert((await active()) === "m3-briefing", "About page 'Start Mission Three' opens M3 briefing");
+  await page.goto(BASE + "#hub", { waitUntil: "load" });
+  await sleep(300);
+  await click('.hero [data-nav="m3-briefing"]');
+  assert((await active()) === "m3-briefing", "hub hero 'Start Mission Three' opens M3 briefing");
   await page.goto(BASE + "#about", { waitUntil: "load" });
   await sleep(300);
   await click('#view-about [data-nav="m2-briefing"]');
@@ -375,6 +548,18 @@ function assert(c, m) { if (!c) throw new Error("ASSERT: " + m); console.log("  
   await click('#m2-source-body [data-hs="proc-name"]');
   await sleep(700);
   await page.screenshot({ path: `${SHOTS}/${TAG}-12-mobile-m2-inspector.png`, fullPage: false });
+  await page.goto(BASE + "#hub", { waitUntil: "load" });
+  await page.reload({ waitUntil: "load" });
+  await sleep(500);
+  await click('.card [data-nav="m3-briefing"]');
+  assert((await active()) === "m3-briefing", "M3 hub card opens briefing (mobile)");
+  await click("#m3-btn-start");
+  await sleep(700);
+  await page.screenshot({ path: `${SHOTS}/${TAG}-13-mobile-m3-detect.png`, fullPage: false });
+  await click('#m3-source-body [data-hs="dns-entropy"]');
+  await sleep(700);
+  assert((await page.$eval("#m3-insp-body .insp-title", (e) => e.textContent)).includes("entropy"), "M3 inspector works on mobile");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-14-mobile-m3-inspector.png`, fullPage: false });
   // hub snapshot
   await page.setViewport({ width: 1280, height: 900 });
   await page.goto(BASE + "#hub", { waitUntil: "load" });

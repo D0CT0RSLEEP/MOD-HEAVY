@@ -8,6 +8,7 @@
  *
  *   Mission One  missions/m1.json -> js/m1-data.js  (window.MODHEAVY_M1_EMBED)
  *   Mission Two  missions/m2.json -> js/m2-data.js  (window.MODHEAVY_M2_EMBED)
+ *   Mission Three missions/m3.json -> js/m3-data.js (window.MODHEAVY_M3_EMBED)
  *
  * Usage:  node tools/build-embed.js              (writes every embed)
  *         node tools/build-embed.js m2           (writes one embed)
@@ -24,6 +25,7 @@ const root = path.resolve(__dirname, "..");
 const MISSIONS = {
   m1: { name: "Mission One", global: "MODHEAVY_M1_EMBED" },
   m2: { name: "Mission Two", global: "MODHEAVY_M2_EMBED" },
+  m3: { name: "Mission Three", global: "MODHEAVY_M3_EMBED" },
 };
 
 const args = process.argv.slice(2);

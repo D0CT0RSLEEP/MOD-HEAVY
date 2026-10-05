@@ -41,11 +41,25 @@ Lumen-7 and every model, hub, domain, hash, and credential in Mission Two are fi
 
 Facilitator notes and the answer key: [`docs/MISSION_TWO.md`](docs/MISSION_TWO.md) (spoilers).
 
+### Mission Three: Exfil Whisper (~20–30 min)
+
+The night after Ghost Process, the netflow baseline flags a steady trickle of DNS lookups from the warehouse VLAN to names no human would type. It traces to **NG-WH-PRINT-07**, a Linux label-printer controller nobody manages — which happens to mount the billing-exports fileshare.
+
+1. **Detect** — An evidence console with five sources: the internal resolver's query log (high-entropy one-time labels, a numbered TXT series, all under a look-alike `cdn-telemetry-sync.example`), the host's scheduled tasks (a per-minute timer running a hidden, inventory-unknown binary 01:00–03:59), a hidden staging-directory listing (sequential 180 B base32 chunks, a progress cursor, and staged billing exports), the perimeter egress log (DNS straight to an external nameserver, bypassing the resolver, in identical per-minute bursts), and a known-good DNS profile from a sister label host. Decoys: readable CDN lookups, the nightly internal label backup, and the live print spool.
+2. **Decide** — Classify (DNS-tunnel exfiltration vs. misconfig / insider-USB / false positive), justify, then scope two ways from an asset record, a fleet DNS hunt, and an exfil estimate: **which host and data**, and **how much left** (bytes per query × queries per night × nights, bounded by the cursor).
+3. **Contain** — Sinkhole the domain, block the external nameserver, and pin the VLAN to the internal resolver; isolate and image the host; remove the tunneller and its timer; rotate the reused service-account password and revoke the fileshare access; scope the exposed data and notify the data-protection owner; hunt the fleet. Overreaction (block all DNS, shut the warehouse, reimage every host), harmful moves (wipe before imaging, resolve the attacker's domain, "poison" the nameserver), and underreaction (flush the cache and close) cost points.
+4. **Document** — Incident report with summary, IOCs, actions, and lessons learned (DNS analytics, egress/resolver pinning, least privilege for appliances, asset inventory + EDR coverage, data controls on exports, post-incident hunting).
+5. **Debrief** — Score out of 100, gaps, downloadable report, and a hook teasing Mission Four. 70+ unlocks a lore crumb.
+
+Every host, domain, IP, hash, and staged file in Mission Three is fictional. Query names, task lines, and listings appear as inert text for recognition only; nothing resolves, runs, or contains real data.
+
+Facilitator notes and the answer key: [`docs/MISSION_THREE.md`](docs/MISSION_THREE.md) (spoilers).
+
 ## How to open
 
 ### Option A — open the file
 
-Open `index.html` in a modern browser (Chrome, Firefox, Safari, Edge). Browsers block `fetch()` of local JSON under `file://`, so each mission also ships its data as a plain script (Mission Zero: embedded in `js/main.js`; Mission One: `js/m1-data.js`; Mission Two: `js/m2-data.js`) and uses it directly when opened from disk. No ES modules are used, so nothing breaks under `file://`.
+Open `index.html` in a modern browser (Chrome, Firefox, Safari, Edge). Browsers block `fetch()` of local JSON under `file://`, so each mission also ships its data as a plain script (Mission Zero: embedded in `js/main.js`; Mission One: `js/m1-data.js`; Mission Two: `js/m2-data.js`; Mission Three: `js/m3-data.js`) and uses it directly when opened from disk. No ES modules are used, so nothing breaks under `file://`.
 
 ### Option B — local static server (recommended)
 
@@ -54,7 +68,7 @@ cd /path/to/mod-heavy
 python3 -m http.server 8080
 ```
 
-Then visit `http://127.0.0.1:8080/`. From the hub, choose **Start Mission Zero**, **Start Mission One**, or **Start Mission Two** (or the mission cards).
+Then visit `http://127.0.0.1:8080/`. From the hub, choose **Start Mission Zero**, **Start Mission One**, **Start Mission Two**, or **Start Mission Three** (or the mission cards).
 
 Any static file server works (`npx serve`, GitHub Pages, etc.). All paths are relative.
 
@@ -64,21 +78,25 @@ Any static file server works (`npx serve`, GitHub Pages, etc.). All paths are re
 mod-heavy/
   index.html            # Hub + all mission views (M0: briefing → triage → after-action;
                         #   M1: m1-briefing → m1-detect → m1-decide → m1-contain → m1-document → m1-debrief;
-                        #   M2: m2-briefing → m2-detect → m2-decide → m2-contain → m2-document → m2-debrief)
-  css/styles.css        # Dark ops-floor UI (Mission One section, then Mission Two console additions)
+                        #   M2: m2-briefing → m2-detect → m2-decide → m2-contain → m2-document → m2-debrief;
+                        #   M3: m3-briefing → m3-detect → m3-decide → m3-contain → m3-document → m3-debrief)
+  css/styles.css        # Dark ops-floor UI (Mission One section, then Mission Two + Three console additions)
   js/main.js            # Hub navigation + Mission Zero state/scoring (M0 data embedded)
   js/m1.js              # Mission One state, rendering, scoring
   js/m1-data.js         # GENERATED file:// fallback copy of missions/m1.json
   js/m2.js              # Mission Two state, evidence console, rendering, scoring
   js/m2-data.js         # GENERATED file:// fallback copy of missions/m2.json
+  js/m3.js              # Mission Three state, evidence console, rendering, scoring (mirrors m2.js)
+  js/m3-data.js         # GENERATED file:// fallback copy of missions/m3.json
   missions/m0.json      # Mission Zero alert story + choices
   missions/m1.json      # Mission One email, hotspots, logs, actions, report keys, story (source of truth)
   missions/m2.json      # Mission Two evidence sources, hotspots, logs, scopes, actions, report keys, story
-  tools/build-embed.js  # Regenerates js/m1-data.js + js/m2-data.js (--check to verify; or pass m1 / m2)
+  missions/m3.json      # Mission Three evidence sources, hotspots, logs, scopes, actions, report keys, story
+  tools/build-embed.js  # Regenerates js/m1-data.js + js/m2-data.js + js/m3-data.js (--check to verify; or pass m1 / m2 / m3)
   tools/smoke-test.sh   # Syntax, embed freshness, scoring integrity, fiction lint, nav targets,
                         #   every referenced file returns 200 over http.server
   tools/browser-test.js # Optional headless-Chrome end-to-end test (needs puppeteer-core; see header)
-  docs/                 # Design notes (blue-team framing, CyberLabs tie-in, Mission One + Two facilitator guides)
+  docs/                 # Design notes (blue-team framing, CyberLabs tie-in, Mission One / Two / Three facilitator guides)
   README.md
 ```
 
@@ -89,29 +107,29 @@ mod-heavy/
 - Mission scripts scope their DOM hooks by prefix (`.m2-progress`, `.m2-timer`, `#m2-…`, `data-m2-back`) so missions never touch each other's views.
 - Mission data is JSON (fetched over http) with a generated script fallback for `file://`.
 
-### Editing Mission One / Two content
+### Editing Mission One / Two / Three content
 
-Edit `missions/m1.json` or `missions/m2.json`, then regenerate the fallbacks:
+Edit `missions/m1.json`, `missions/m2.json`, or `missions/m3.json`, then regenerate the fallbacks:
 
 ```bash
-node tools/build-embed.js        # or: node tools/build-embed.js m2
+node tools/build-embed.js        # or: node tools/build-embed.js m3
 bash tools/smoke-test.sh
 ```
 
 The smoke test also checks that each mission's phases still sum to 100, that every hotspot is placed in an evidence source, and that mission data only uses documentation IPs and `.example` domains.
 
-Optional full playthrough in headless Chrome (M0 regression; perfect and poor M1 runs; perfect, overreaction, and underreaction M2 runs; M1 → M2 handoff; deep links; mobile layout) — see the header of `tools/browser-test.js`.
+Optional full playthrough in headless Chrome (M0 regression; perfect and poor M1 runs; perfect, overreaction, and underreaction M2 and M3 runs; M1 → M2 and M2 → M3 handoffs; deep links; mobile layout) — see the header of `tools/browser-test.js`.
 
 ## Blue-team framing
 
 - Loop: **Detect → Decide → Contain → Document**
 - Score judgment (classification, scoping, proportional containment, report quality), not flags
 - ROE shown on every briefing: defend only; simulated data
-- See `docs/BLUE_TEAM_LAB.md`, `docs/CYBERLABS_TIE_IN.md`, `docs/MISSION_ONE.md`, and `docs/MISSION_TWO.md`
+- See `docs/BLUE_TEAM_LAB.md`, `docs/CYBERLABS_TIE_IN.md`, `docs/MISSION_ONE.md`, `docs/MISSION_TWO.md`, and `docs/MISSION_THREE.md`
 
 ## Privacy
 
-Analyst notes (M0) and incident-report drafts/results (M1, M2) are stored only in `localStorage` on the player's device (`modheavy-m0`, `modheavy-m1`, `modheavy-m2`). Nothing is uploaded. The only external requests are Google Fonts (optional; system fonts are used if blocked).
+Analyst notes (M0) and incident-report drafts/results (M1, M2, M3) are stored only in `localStorage` on the player's device (`modheavy-m0`, `modheavy-m1`, `modheavy-m2`, `modheavy-m3`). Nothing is uploaded. The only external requests are Google Fonts (optional; system fonts are used if blocked).
 
 ## License / fiction notice
 

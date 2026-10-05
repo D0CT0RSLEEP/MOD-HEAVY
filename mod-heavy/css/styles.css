@@ -639,7 +639,8 @@ a.btn {
    ============================================================ */
 
 .m1-progress,
-.m2-progress {
+.m2-progress,
+.m3-progress {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -700,7 +701,8 @@ a.btn {
 }
 
 .m1-timer,
-.m2-timer {
+.m2-timer,
+.m3-timer {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--amber);
@@ -1623,9 +1625,115 @@ a.btn {
   font-weight: 600;
 }
 
+/* ============================================================
+   Mission Three · Exfil Whisper (js/m3.js)
+   Same evidence console as Mission Two. js/m3.js emits m3-* class
+   names, so the console, transcript, table, and scope rules are
+   mirrored here under the m3 prefix (missions never share hooks).
+   ============================================================ */
+
+.mail-layout.m3-console {
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+
+.m3-console .mail-inbox {
+  grid-column: 1 / -1;
+  padding: 0.75rem;
+}
+
+.m3-console .inbox-list {
+  flex-direction: row;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+}
+
+.m3-console .inbox-list li {
+  flex: 1 1 0;
+  min-width: 160px;
+}
+
+.m3-console .inbox-item {
+  height: 100%;
+}
+
+.m3-pane {
+  min-width: 0;
+}
+
+.m3-pane .log-table {
+  font-size: 0.7rem;
+}
+
+.m3-pane .log-table th,
+.m3-pane .log-table td,
+#m3-logs .log-table td {
+  padding: 0.35rem 0.45rem;
+}
+
+.log-table td.m3-wrap {
+  white-space: normal;
+  overflow-wrap: break-word;
+  min-width: 9rem;
+}
+
+.m3-meta {
+  margin: 0 0 0.85rem;
+  font-size: 0.85rem;
+}
+
+.m3-meta dd {
+  overflow-wrap: anywhere;
+}
+
+/* scheduled-task listing (terminal kind) */
+.m3-term {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.55;
+  color: #b9c6d8;
+  max-height: 34rem;
+  overflow: auto;
+}
+
+.m3-term-line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.m3-term-head {
+  color: var(--cyan);
+}
+
+.hs.hs-block.m3-term-hs {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.74rem;
+}
+
+/* decide: multiple scope questions */
+.m3-scope-q + .m3-scope-q {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.m3-scope-prompt {
+  margin: 0.2rem 0 0;
+  font-weight: 600;
+}
+
 @media (max-width: 1000px) {
   .mail-layout,
-  .mail-layout.m2-console {
+  .mail-layout.m2-console,
+  .mail-layout.m3-console {
     grid-template-columns: minmax(0, 1fr);
   }
 
