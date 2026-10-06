@@ -640,7 +640,8 @@ a.btn {
 
 .m1-progress,
 .m2-progress,
-.m3-progress {
+.m3-progress,
+.m4-progress {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -702,7 +703,8 @@ a.btn {
 
 .m1-timer,
 .m2-timer,
-.m3-timer {
+.m3-timer,
+.m4-timer {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--amber);
@@ -1730,10 +1732,117 @@ a.btn {
   font-weight: 600;
 }
 
+/* ============================================================
+   Mission Four · Lantern Court (js/m4.js)
+   Same evidence console as Mission Three. js/m4.js emits m4-* class
+   names, so the console, transcript, table, and scope rules are
+   mirrored here under the m4 prefix (missions never share hooks).
+   ============================================================ */
+
+.mail-layout.m4-console {
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+
+.m4-console .mail-inbox {
+  grid-column: 1 / -1;
+  padding: 0.75rem;
+}
+
+.m4-console .inbox-list {
+  flex-direction: row;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+}
+
+.m4-console .inbox-list li {
+  flex: 1 1 0;
+  min-width: 160px;
+}
+
+.m4-console .inbox-item {
+  height: 100%;
+}
+
+.m4-pane {
+  min-width: 0;
+}
+
+.m4-pane .log-table {
+  font-size: 0.7rem;
+}
+
+.m4-pane .log-table th,
+.m4-pane .log-table td,
+#m4-logs .log-table td {
+  padding: 0.35rem 0.45rem;
+}
+
+.log-table td.m4-wrap {
+  white-space: normal;
+  overflow-wrap: break-word;
+  min-width: 9rem;
+}
+
+.m4-meta {
+  margin: 0 0 0.85rem;
+  font-size: 0.85rem;
+}
+
+.m4-meta dd {
+  overflow-wrap: anywhere;
+}
+
+/* scheduled-task listing (terminal kind) */
+.m4-term {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.55;
+  color: #b9c6d8;
+  max-height: 34rem;
+  overflow: auto;
+}
+
+.m4-term-line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.m4-term-head {
+  color: var(--cyan);
+}
+
+.hs.hs-block.m4-term-hs {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.74rem;
+}
+
+/* decide: multiple scope questions */
+.m4-scope-q + .m4-scope-q {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.m4-scope-prompt {
+  margin: 0.2rem 0 0;
+  font-weight: 600;
+}
+
+
 @media (max-width: 1000px) {
   .mail-layout,
   .mail-layout.m2-console,
-  .mail-layout.m3-console {
+  .mail-layout.m3-console,
+  .mail-layout.m4-console {
     grid-template-columns: minmax(0, 1fr);
   }
 

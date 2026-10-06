@@ -22,7 +22,8 @@ You are a CyberLabs analyst on shift. Something weird hit the network. Your job 
 | M1 | Phish in the Wire | Email / identity | Inspect a phishing email (headers, auth results, links, attachment), classify + scope from proxy/sign-in logs, pick proportional containment, write an incident report | Shipped — see `MISSION_ONE.md` |
 | M2 | Ghost Process | Endpoint / AI supply chain | Spot a disguised process, read a backdoored AI agent's transcript, catch beaconing and insecure AI-authored code, scope hosts + exposed secrets, contain proportionally, write a report with AI-agent lessons learned | Shipped — see `MISSION_TWO.md` |
 | M3 | Exfil Whisper | Network / detection | Catch low-and-slow DNS-tunnel exfiltration (high-entropy labels, look-alike domain, resolver bypass, quiet-hours cadence) from an overlooked appliance, triage its scheduled task + staging dir, scope host and data volume, cut the channel proportionally, write a breach-aware report | Shipped — see `MISSION_THREE.md` |
-| M4 | Lantern Court | Threat intel / attribution + reporting | Connect the LNTRN thread across M0–M3 and write the CyberLabs after-action | Planned — teased at end of M3 |
+| M4 | Lantern Court | Network / email · covert channels | Catch steganographic data exfiltration hidden in a trusted animated-GIF email signature that doubles as a remote tracking beacon, decode the channel by file shape (bytes after the terminator, entropy, look-alike CDN), secure the abused mailbox (account takeover), scope the exposed batch, contain proportionally, write a breach-aware report | Shipped — see `MISSION_FOUR.md` |
+| M5 | Last Light | Threat intel / attribution + reporting | Connect the LNTRN / Lantern Court thread across M0–M4 and get ahead of the operator; write the CyberLabs after-action | Planned — teased at end of M4 |
 
 Each module: **Detect → Decide → Contain → Document**. No “get shell / crack hash / exploit CVE” steps.
 

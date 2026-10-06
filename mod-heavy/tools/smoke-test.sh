@@ -19,16 +19,16 @@ for f in missions/*.json; do
   if node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))"; then echo "  ok   $f"; else echo "  FAIL $f"; fail=1; fi
 done
 
-echo "== embeds match missions/m1.json + missions/m2.json + missions/m3.json"
+echo "== embeds match missions/m1.json + missions/m2.json + missions/m3.json + missions/m4.json"
 node tools/build-embed.js --check || fail=1
 
-echo "== mission scoring integrity (M1, M2, M3: phases sum to 100, keys consistent)"
+echo "== mission scoring integrity (M1, M2, M3, M4: phases sum to 100, keys consistent)"
 node - <<'NODE' || fail=1
 const fs = require("fs");
 let bad = 0;
 const sum = (a) => a.reduce((x, y) => x + y, 0);
 const max = (a) => Math.max(...a);
-for (const id of ["m1", "m2", "m3"]) {
+for (const id of ["m1", "m2", "m3", "m4"]) {
   const m = JSON.parse(fs.readFileSync(`missions/${id}.json`, "utf8"));
   const errs = [];
   const total = m.detect.maxScore + m.decide.maxScore + m.contain.maxScore + m.document.maxScore;
@@ -45,7 +45,7 @@ for (const id of ["m1", "m2", "m3"]) {
   if (sum(m.document.fields.map((f) => f.max)) !== m.document.maxScore) errs.push("document field maxima != document.maxScore");
   m.document.fields.forEach((f) => { if (sum(f.keys.map((k) => k.points)) < f.max) errs.push(`report field ${f.id} max unreachable`); });
   m.document.fields.forEach((f) => f.keys.forEach((k) => k.match.forEach((g) => g.forEach((t) => { try { new RegExp(t, "i"); } catch (e) { errs.push(`bad regex ${t}`); } }))));
-  if (id === "m2" || id === "m3") {
+  if (id === "m2" || id === "m3" || id === "m4") {
     const blob = JSON.stringify(m.detect.sources);
     const used = new Set((blob.match(/"hs":"([^"]+)"/g) || []).map((x) => x.slice(6, -1)));
     (blob.match(/,"([a-z]+-[a-z]+)"\]/g) || []).forEach((x) => used.add(x.slice(2, -2)));
@@ -61,7 +61,7 @@ NODE
 echo "== fiction lint (documentation IPs, .example domains only)"
 node - <<'NODE' || fail=1
 const fs = require("fs");
-const files = ["missions/m0.json", "missions/m1.json", "missions/m2.json", "missions/m3.json", "js/main.js"];
+const files = ["missions/m0.json", "missions/m1.json", "missions/m2.json", "missions/m3.json", "missions/m4.json", "js/main.js"];
 const okIp = (ip) => /^(192\.0\.2|198\.51\.100|203\.0\.113)\.\d+$/.test(ip) || /^10\./.test(ip) || /^127\./.test(ip);
 let bad = 0;
 for (const f of files) {

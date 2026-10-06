@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * MOD-HEAVY optional end-to-end browser test (Mission Zero regression + full Mission One,
- * Mission Two, and Mission Three runs: perfect, poor/overreaction, underreaction, hand-offs,
+ * Mission Two, Mission Three, and Mission Four runs: perfect, poor/overreaction, underreaction, hand-offs,
  * deep links, mobile).
  * Needs Chrome/Chromium and puppeteer-core (not a project dependency):
  *   npm i --no-save puppeteer-core      (or install elsewhere and set NODE_PATH=/that/dir/node_modules)
@@ -407,6 +407,15 @@ function assert(c, m) { if (!c) throw new Error("ASSERT: " + m); console.log("  
   assert((await page.$eval("#m3-gaps", (e) => e.textContent)).includes("No gaps"), "M3 perfect run has no gaps");
   await page.screenshot({ path: `${SHOTS}/${TAG}-m3-7-debrief.png`, fullPage: true });
 
+  // --- M3 debrief hands off to Mission Four ---
+  await click("#m3-btn-next");
+  assert((await active()) === "m4-briefing", "M3 debrief 'Start Mission Four' opens M4 briefing");
+  await click('#view-m4-briefing [data-nav="hub"]');
+  await click('.hero [data-nav="m3-briefing"]');
+  assert((await page.$eval("#m3-btn-start", (e) => e.textContent)).includes("View debrief"), "M3 briefing offers 'View debrief' after finishing");
+  await click("#m3-btn-start");
+  assert((await active()) === "m3-debrief", "M3 debrief resumes from briefing");
+
   // --- M3 replay: overreaction + ROE violation ---
   await click("#m3-btn-replay");
   assert((await active()) === "m3-briefing", "M3 replay returns to briefing");
@@ -475,6 +484,164 @@ function assert(c, m) { if (!c) throw new Error("ASSERT: " + m); console.log("  
   // --- M1 still intact after M2 runs (independent state) ---
   assert((await page.evaluate(() => window.MODHEAVY_M1.state.phase)) === "debrief", "M1 state untouched by M2");
 
+  // ================= Mission Four · Lantern Court =================
+  await page.goto(BASE + "#m4-briefing", { waitUntil: "load" }); // same-document hash change keeps M1/M2/M3 state
+  await sleep(300);
+  assert((await active()) === "m4-briefing", "hashchange to #m4-briefing opens M4 briefing");
+  await page.waitForFunction(() => window.MODHEAVY_M4 && window.MODHEAVY_M4.mission);
+  const m4brief = await page.$eval("#m4-brief-body", (e) => e.textContent);
+  assert(m4brief.includes("t.okafor") && m4brief.includes("NGL-SOC-8988"), "M4 briefing rendered from data");
+  assert(m4brief.includes("Nothing in this mission is runnable or real"), "M4 disclaimer shown on briefing");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m4-1-briefing.png`, fullPage: true });
+  await click("#m4-btn-start");
+  assert((await active()) === "m4-detect", "M4 Detect view opens");
+  assert((await page.$$("#m4-sources .inbox-item")).length === 5, "M4: five evidence sources listed");
+  assert((await page.$eval("#m4-source-body", (e) => e.textContent)).includes("cdn-fastparcel.example"), "M4 gateway log shows the look-alike host");
+
+  const m4hs = await page.evaluate(() => Object.entries(window.MODHEAVY_M4.mission.detect.hotspots).map(([id, h]) => [id, h.suspicious, h.source]));
+  assert(m4hs.length === 12, "M4 has 12 hotspots");
+  for (const [id, sus, src] of m4hs) {
+    await click(`#m4-sources .inbox-item[data-source="${src}"]`);
+    await click(`#m4-source-body [data-hs="${id}"]`);
+    const btns = await page.$$("#m4-insp-body .insp-actions button");
+    assert(btns.length === 2, `M4 inspector opens for ${id}`);
+    await (sus ? btns[0] : btns[1]).click();
+    await sleep(80);
+    if (id === "gif-trailer") await page.screenshot({ path: `${SHOTS}/${TAG}-m4-2-detect-gif.png`, fullPage: true });
+    if (id === "beacon-token") await page.screenshot({ path: `${SHOTS}/${TAG}-m4-3-detect-fetch.png`, fullPage: true });
+    if (id === "dlp-payload") await page.screenshot({ path: `${SHOTS}/${TAG}-m4-4-detect-dlp.png`, fullPage: true });
+  }
+  assert((await page.$eval("#m4-judged-count", (e) => e.textContent)).includes("12/12"), "all 12 M4 items judged");
+  assert((await page.$eval("#m4-detect-gate", (e) => e.textContent)).includes("Everything judged"), "M4 detect gate reports complete");
+  await click('#m4-sources .inbox-item[data-source="ref"]');
+  const ref4 = await page.$eval("#m4-source-body", (e) => e.textContent);
+  assert(ref4.includes("alvarez.gif") && !ref4.includes("cdn-fastparcel"), "M4 reference profile opens and has no look-alike host");
+  assert((await page.$$("#m4-source-body [data-hs]")).length === 0, "M4 reference profile has nothing to judge");
+  await page.evaluate(() => Array.from(document.querySelectorAll("#m4-evidence .ev-jump")).find((li) => /appended after the GIF terminator/i.test(li.textContent)).click());
+  await sleep(100);
+  assert((await page.$eval("#m4-sources .inbox-item.active", (e) => e.dataset.source)) === "gif", "M4 evidence board item jumps to its source (GIF breakdown)");
+  await click("#m4-btn-to-decide");
+  assert((await active()) === "m4-decide", "M4 Decide view opens");
+
+  await click('#m4-class-options .opt[data-id="stego"]');
+  assert((await page.$eval("#m4-class-feedback", (e) => e.className)).includes("good"), "stego classification = good");
+  const just4 = await page.evaluate(() => window.MODHEAVY_M4.mission.decide.justification.options.filter((o) => o.correct).map((o) => o.id));
+  for (const id of just4) await click(`#m4-just-options input[value="${id}"]`);
+  await click("#m4-btn-just");
+  assert((await page.$eval("#m4-just-feedback", (e) => e.className)).includes("good"), "M4 justification = good");
+  assert((await page.$$("#m4-logs table")).length === 2 && (await page.$$("#m4-logs dl")).length === 1, "M4 mailbox record + hunt + exfil estimate rendered");
+  assert((await page.$$('#m4-scope-host .option-grid')).length === 1, "M4 second scope question hidden until the first is answered");
+  await click('#m4-scope-host .option-grid[data-scope="account"] .opt[data-id="sc-okafor"]');
+  assert((await page.$eval("#m4-decide-continue", (e) => e.hidden)), "M4 continue hidden until all scope questions answered");
+  await click('#m4-scope-host .option-grid[data-scope="data"] .opt[data-id="da-partial"]');
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m4-5-decide.png`, fullPage: true });
+  await click("#m4-btn-to-contain");
+  assert((await active()) === "m4-contain", "M4 Contain view opens");
+
+  for (const id of ["blockbeacon", "secureacct", "stripsig", "preserve", "dataowner", "hunt", "report"]) await click(`#m4-actions input[value="${id}"]`);
+  await click("#m4-btn-execute");
+  const log4 = await page.$eval("#m4-contain-log", (e) => e.textContent);
+  assert(log4.includes("sinkhole") && !log4.includes("NOT DONE"), "M4 execution log shows the channel cut, nothing missed");
+  assert((await page.evaluate(() => window.MODHEAVY_M4.scores().contain)) === 25, "M4 full containment = 25 (neutral report adds 0)");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m4-6-contain.png`, fullPage: true });
+  await click("#m4-btn-to-document");
+  assert((await active()) === "m4-document", "M4 Document view opens");
+  await click("#m4-btn-file");
+  assert(!(await page.$eval("#m4-doc-error", (e) => e.hidden)), "M4 empty report is rejected");
+  const R4 = {
+    summary: "Covert-channel data exfiltration via steganography: a weaponised airplane signature GIF in the compromised t.okafor marketing mailbox (account takeover) hid the Q4 price list and ~1,400 customer records and beacons remotely.",
+    iocs: "cdn-fastparcel[.]example\n203.0.113[.]90\n/sig/okafor.gif?e= (per-recipient token)\nokafor.gif (SIMULATION:4c7e2a…b19f)\n1.58 MB appended after the GIF terminator + base64 comment block\nt.okafor@northglass.example",
+    actions: "Sinkholed cdn-fastparcel and blocked 203.0.113.90 at egress; stripped the remote image and quarantined the sent copies. Reset okafor's mailbox, revoked all sessions and the legacy app password, enforced MFA. Reverted the signature template and purged the sent messages. Preserved a forensic copy of the GIF, headers, and fetch logs as evidence. Notified the data-protection lead for the exposed customer and price data. Hunted the fleet for the host and remote-load signatures.",
+    recommendation: "Strip remote images and embed signature images (cid:) instead of remote-load. Lock down the signature service with change control and approved image hosts. Kill legacy app passwords and enforce MFA. Add outbound DLP with content inspection of images and attachments. Detect stego by entropy, size-vs-pixels, and trailing bytes after the terminator. Run a post-incident threat hunt and assume the operator will pivot (attribution).",
+  };
+  for (const [k, v] of Object.entries(R4)) await page.type(`#m4-field-${k}`, v, { delay: 0 });
+  await click("#m4-btn-file");
+  assert((await active()) === "m4-debrief", "M4 Debrief view opens");
+  const m4score = await page.$eval("#m4-score-num", (e) => e.textContent);
+  console.log("  M4 score:", m4score, JSON.stringify(await page.evaluate(() => { const s = window.MODHEAVY_M4.scores(); return { d: s.detect, dc: s.decide, c: s.contain, r: s.report.total }; })));
+  assert(m4score === "100/100", "M4 perfect run scores 100/100");
+  assert((await page.$eval("#m4-score-label", (e) => e.textContent)).includes("lead-ready"), "M4 top score band shown");
+  assert((await page.$eval("#m4-hook-body", (e) => e.textContent)).includes("MISSION FIVE"), "Mission Five hook shown");
+  assert((await page.$eval("#m4-lore-title", (e) => e.textContent)).includes("LC infrastructure"), "M4 lore unlocked on pass");
+  const prev4 = await page.$eval("#m4-report-preview", (e) => e.textContent);
+  assert(prev4.includes("NGL-SOC-8988") && prev4.includes("Scope (data)") && prev4.includes("LESSONS LEARNED"), "M4 report preview includes ticket, both scopes, lessons learned");
+  assert((await page.$eval("#m4-gaps", (e) => e.textContent)).includes("No gaps"), "M4 perfect run has no gaps");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m4-7-debrief.png`, fullPage: true });
+
+  // --- M4 pass-threshold boundary: 70 passes / 69 fails ---
+  const m4band = await page.evaluate(() => {
+    const DB = window.MODHEAVY_M4.mission.debrief;
+    const bands = DB.scoreBands.slice().sort((a, b) => b.min - a.min);
+    const at = (t) => { const b = bands.find((x) => t >= x.min); return { label: b.label, pass: t >= DB.passScore }; };
+    return { passScore: DB.passScore, p70: at(70), p69: at(69) };
+  });
+  assert(m4band.passScore === 70, "M4 pass mark is 70");
+  assert(m4band.p70.pass === true && m4band.p70.label === "Solid containment", "M4 score 70 passes (Solid containment)");
+  assert(m4band.p69.pass === false, "M4 score 69 fails the pass mark");
+
+  // --- M4 replay: overreaction + ROE violation ---
+  await click("#m4-btn-replay");
+  assert((await active()) === "m4-briefing", "M4 replay returns to briefing");
+  assert((await page.$eval("#m4-btn-start", (e) => e.textContent)).includes("Accept"), "M4 state reset after replay");
+  await click("#m4-btn-start");
+  for (const [id, , src] of m4hs.slice(0, 6)) {
+    await click(`#m4-sources .inbox-item[data-source="${src}"]`);
+    await click(`#m4-source-body [data-hs="${id}"]`);
+    const btns = await page.$$("#m4-insp-body .insp-actions button");
+    await btns[0].click(); // flag everything suspicious (gif-legit is a decoy)
+    await sleep(60);
+  }
+  await click("#m4-btn-to-decide");
+  await click('#m4-class-options .opt[data-id="fp"]');
+  assert((await page.$eval("#m4-class-feedback", (e) => e.className)).includes("bad"), "M4 false-positive classification = bad");
+  await click('#m4-just-options input[value="j-image"]');
+  await click('#m4-just-options input[value="j-pixel"]');
+  await click("#m4-btn-just");
+  await click('#m4-scope-host .option-grid[data-scope="account"] .opt[data-id="sc-allmkt"]');
+  await click('#m4-scope-host .option-grid[data-scope="data"] .opt[data-id="da-everything"]');
+  await click("#m4-btn-to-contain");
+  for (const id of ["preserve", "blockallimg", "disablemail", "reimageall", "floodbeacon"]) await click(`#m4-actions input[value="${id}"]`);
+  await click("#m4-btn-execute");
+  await click("#m4-btn-to-document");
+  for (const k of ["summary", "iocs", "actions", "recommendation"]) {
+    await page.$eval(`#m4-field-${k}`, (e) => { e.value = ""; });
+    await page.type(`#m4-field-${k}`, "just a signature image, shut it all down", { delay: 0 });
+  }
+  await click("#m4-btn-file");
+  const o4 = await page.evaluate(() => { const s = window.MODHEAVY_M4.scores(); return { total: s.total, d: s.detect, dc: s.decide, c: s.contain, r: s.report.total }; });
+  console.log("  M4 overreaction scores:", JSON.stringify(o4));
+  assert(o4.total < 70, "M4 overreaction run fails pass mark");
+  assert(o4.c === 0, "M4 overreaction penalties clamp containment at 0");
+  assert((await page.$eval("#m4-lore-title", (e) => e.textContent)).includes("sealed"), "M4 lore locked on fail");
+  const g4 = await page.$eval("#m4-gaps", (e) => e.textContent);
+  assert(g4.includes("Overreaction") && g4.includes("Hard stop"), "M4 gaps call out the overreaction and the ROE violation");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-m4-8-debrief-over.png`, fullPage: true });
+
+  // --- M4 replay: underreaction (revert the template, delete + close) ---
+  await click("#m4-btn-replay");
+  await click("#m4-btn-start");
+  for (const [id, sus, src] of m4hs) {
+    await click(`#m4-sources .inbox-item[data-source="${src}"]`);
+    await click(`#m4-source-body [data-hs="${id}"]`);
+    const btns = await page.$$("#m4-insp-body .insp-actions button");
+    await (sus ? btns[0] : btns[1]).click();
+    await sleep(40);
+  }
+  await click("#m4-btn-to-decide");
+  await click('#m4-class-options .opt[data-id="stego"]');
+  await click('#m4-just-options input[value="j-beacon"]');
+  await click("#m4-btn-just");
+  await click('#m4-scope-host .option-grid[data-scope="account"] .opt[data-id="sc-insider"]');
+  await click('#m4-scope-host .option-grid[data-scope="data"] .opt[data-id="da-none"]');
+  await click("#m4-btn-to-contain");
+  for (const id of ["stripsig", "deleteclose"]) await click(`#m4-actions input[value="${id}"]`);
+  await click("#m4-btn-execute");
+  const ulog4 = await page.$eval("#m4-contain-log", (e) => e.textContent);
+  assert((ulog4.match(/NOT DONE/g) || []).length === 5, "M4 underreaction leaves 5 required actions undone");
+  assert((await page.evaluate(() => window.MODHEAVY_M4.scores().contain)) === 1, "M4 underreaction containment = 4 − 3 = 1");
+  assert((await page.evaluate(() => window.MODHEAVY_M3.state.phase)) === "contain", "M3 state untouched by M4");
+
+
   // --- deep links with a real reload (init path) and hashchange path ---
   await page.goto(BASE + "#m1-contain", { waitUntil: "load" });
   await page.reload({ waitUntil: "load" });
@@ -508,6 +675,14 @@ function assert(c, m) { if (!c) throw new Error("ASSERT: " + m); console.log("  
   await page.goto(BASE + "#m3-debrief", { waitUntil: "load" }); // same-document hash change
   await sleep(400);
   assert((await active()) === "m3-briefing", "hashchange to #m3-debrief routes to M3 briefing");
+  await page.goto(BASE + "#m4-contain", { waitUntil: "load" });
+  await page.reload({ waitUntil: "load" });
+  await sleep(600);
+  assert((await active()) === "m4-briefing", "reload at #m4-contain lands on M4 briefing");
+  assert((await page.$eval("#m4-btn-start", (e) => e.textContent)).includes("Accept"), "fresh M4 state after reload");
+  await page.goto(BASE + "#m4-debrief", { waitUntil: "load" }); // same-document hash change
+  await sleep(400);
+  assert((await active()) === "m4-briefing", "hashchange to #m4-debrief routes to M4 briefing");
   await page.goto(BASE + "#about", { waitUntil: "load" });
   await sleep(300);
   await click('#view-about [data-nav="m3-briefing"]');
@@ -516,6 +691,14 @@ function assert(c, m) { if (!c) throw new Error("ASSERT: " + m); console.log("  
   await sleep(300);
   await click('.hero [data-nav="m3-briefing"]');
   assert((await active()) === "m3-briefing", "hub hero 'Start Mission Three' opens M3 briefing");
+  await page.goto(BASE + "#about", { waitUntil: "load" });
+  await sleep(300);
+  await click('#view-about [data-nav="m4-briefing"]');
+  assert((await active()) === "m4-briefing", "About page 'Start Mission Four' opens M4 briefing");
+  await page.goto(BASE + "#hub", { waitUntil: "load" });
+  await sleep(300);
+  await click('.hero [data-nav="m4-briefing"]');
+  assert((await active()) === "m4-briefing", "hub hero 'Start Mission Four' opens M4 briefing");
   await page.goto(BASE + "#about", { waitUntil: "load" });
   await sleep(300);
   await click('#view-about [data-nav="m2-briefing"]');
@@ -560,6 +743,19 @@ function assert(c, m) { if (!c) throw new Error("ASSERT: " + m); console.log("  
   await sleep(700);
   assert((await page.$eval("#m3-insp-body .insp-title", (e) => e.textContent)).includes("entropy"), "M3 inspector works on mobile");
   await page.screenshot({ path: `${SHOTS}/${TAG}-14-mobile-m3-inspector.png`, fullPage: false });
+  await page.goto(BASE + "#hub", { waitUntil: "load" });
+  await page.reload({ waitUntil: "load" });
+  await sleep(500);
+  await click('.card [data-nav="m4-briefing"]');
+  assert((await active()) === "m4-briefing", "M4 hub card opens briefing (mobile)");
+  await click("#m4-btn-start");
+  await sleep(700);
+  await page.screenshot({ path: `${SHOTS}/${TAG}-15-mobile-m4-detect.png`, fullPage: false });
+  await click('#m4-sources .inbox-item[data-source="gif"]');
+  await click('#m4-source-body [data-hs="gif-trailer"]');
+  await sleep(700);
+  assert((await page.$eval("#m4-insp-body .insp-title", (e) => e.textContent)).includes("terminator"), "M4 inspector works on mobile");
+  await page.screenshot({ path: `${SHOTS}/${TAG}-16-mobile-m4-inspector.png`, fullPage: false });
   // hub snapshot
   await page.setViewport({ width: 1280, height: 900 });
   await page.goto(BASE + "#hub", { waitUntil: "load" });
